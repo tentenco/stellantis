@@ -299,9 +299,9 @@ updateModelInfo(model) {
 
     // Update exterior carousel with multiple base images
     const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
-    if (exteriorSlideContainer && model.base_image && Array.isArray(model.base_image)) {
+    if (exteriorSlideContainer && model.base_images && Array.isArray(model.base_images)) {
         exteriorSlideContainer.innerHTML = "";
-        model.base_image.forEach(image => {
+        model.base_images.forEach(image => {
             if (image?.url) {
                 const slide = document.createElement("div");
                 slide.className = "splide__slide";
