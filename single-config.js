@@ -955,11 +955,8 @@ updateModelInfo(model) {
                 });
             });
         }
-
-        // Updated renderColorOptions method to use color_options
 // Update renderColorOptions method to use color_options
 renderColorOptions(colors) {
-    console.log("Rendering color options:", colors);
     const colorContainer = document.querySelector(".color-swatches");
     const colorLabel = document.querySelector(".color-label");
     const colorPrice = document.querySelector(".color-price");
