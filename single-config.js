@@ -997,7 +997,7 @@ renderColorOptions(colors) {
                 value="${color.color_name}" 
                 data-name="color"
                 data-price="${color.price_adjustment || 0}"
-                ${index === 0 ? "checked" : ""}>
+                >
             <label for="color-${index}">
                 <img src="${color.swatch_image?.url || ''}" alt="${color.color_name}">
             </label>
