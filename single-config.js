@@ -284,79 +284,78 @@
             }
         }
 
-        updateModelInfo(model) {
-            if (!model) {
-                console.error("Model data is missing or invalid");
-                return;
+        // Modify updateModelInfo method
+updateModelInfo(model) {
+    if (!model) {
+        console.error("Model data is missing or invalid");
+        return;
+    }
+
+    // Update model name
+    const modelName = document.getElementById("model-name");
+    if (modelName) {
+        modelName.textContent = model.name || "Unknown Model";
+    }
+
+    // Update exterior carousel with multiple base images
+    const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
+    if (exteriorSlideContainer && model.base_image && Array.isArray(model.base_image)) {
+        exteriorSlideContainer.innerHTML = "";
+        model.base_image.forEach(image => {
+            if (image?.url) {
+                const slide = document.createElement("div");
+                slide.className = "splide__slide";
+                slide.innerHTML = `
+                    <img src="${image.url}" 
+                         srcset="${image.url}" 
+                         alt="${model.name || 'Model Image'}"
+                         class="model-image">
+                `;
+                exteriorSlideContainer.appendChild(slide);
             }
+        });
+    }
 
-            // 更新車型名稱
-            const modelName = document.getElementById("model-name");
-            if (modelName) {
-                modelName.textContent = model.name || "Unknown Model";
-            } else {
-                console.warn("Model name element is missing");
+    // Update model price
+    const modelPrice = document.getElementById("model-price");
+    if (modelPrice) {
+        const formattedPrice = new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: "TWD",
+        }).format(model.price || 0);
+        modelPrice.textContent = formattedPrice;
+    }
+
+    // Update interior carousel
+    const interiorSlideContainer = document.querySelector(".interior-carousel .splide__list");
+    if (interiorSlideContainer && model.interior_image && model.interior_image.length > 0) {
+        interiorSlideContainer.innerHTML = "";
+        model.interior_image.forEach(image => {
+            if (image?.url) {
+                const slide = document.createElement("div");
+                slide.className = "splide__slide";
+                slide.innerHTML = `
+                    <img src="${image.url}" 
+                         srcset="${image.url}" 
+                         alt="${model.name} Interior">
+                `;
+                interiorSlideContainer.appendChild(slide);
             }
+        });
 
-            // 更新車型圖片
-            const modelImages = document.querySelectorAll(".model-image");
-            modelImages.forEach((img) => {
-                if (model.base_image?.url) {
-                    img.src = model.base_image.url;
-                    img.srcset = model.base_image.url;
-                    img.alt = model.name || "Model Image";
-                }
-            });
-
-            // 更新車型價格
-            const modelPrice = document.getElementById("model-price");
-            if (modelPrice) {
-                const formattedPrice = new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: "TWD",
-                }).format(model.price || 0);
-                modelPrice.textContent = formattedPrice;
-            } else {
-                console.warn("Model price element is missing");
-            }
-
-            const interiorImages = document.querySelectorAll(
-                ".interior-carousel .splide__slide img"
-            );
-            if (model.interior_image && model.interior_image.length > 0) {
-                // 清空現有的 slides
-                const slideContainer = document.querySelector(
-                    ".interior-carousel .splide__list"
-                );
-                if (slideContainer) {
-                    slideContainer.innerHTML = "";
-
-                    // 為每張內裝圖片創建新的 slide
-                    model.interior_image.forEach((image) => {
-                        const slide = document.createElement("div");
-                        slide.className = "splide__slide";
-
-                        const img = document.createElement("img");
-                        img.src = image.url;
-                        img.srcset = image.url;
-                        img.alt = `${model.name} Interior`;
-
-                        slide.appendChild(img);
-                        slideContainer.appendChild(slide);
-                    });
-                    if (this.sliders.interior) {
-                        this.sliders.interior.destroy();
-                        this.sliders.interior = new Splide(".interior-carousel", {
-                            type: "slide",
-                            perPage: 1,
-                            perMove: 1,
-                            pagination: false,
-                            arrows: true,
-                        }).mount();
-                    }
-                }
-            }
+        // Reinitialize interior slider
+        if (this.sliders.interior) {
+            this.sliders.interior.destroy();
+            this.sliders.interior = new Splide(".interior-carousel", {
+                type: "slide",
+                perPage: 1,
+                perMove: 1,
+                pagination: false,
+                arrows: true,
+            }).mount();
         }
+    }
+}
 
         updatePriceDisplays() {
             const basePrice = this.currentConfig.model?.price || 0;
@@ -958,6 +957,7 @@
         }
 
         // Updated renderColorOptions method to use color_options
+// Update renderColorOptions method to use color_options
 renderColorOptions(colors) {
     console.log("Rendering color options:", colors);
     const colorContainer = document.querySelector(".color-swatches");
@@ -971,21 +971,21 @@ renderColorOptions(colors) {
 
     colorContainer.innerHTML = "";
 
-    // Get current configuration's color options
-    const currentConfig = this.configurationData.find(
-        (config) =>
-            config._engines.some(
-                (engine) => engine.id === parseInt(this.currentConfig.engine)
-            ) &&
-            config._trims.some(
-                (trim) => trim.id === parseInt(this.currentConfig.trim)
-            )
+    // Find the current configuration that matches selected engine and trim
+    const currentConfig = this.configurationData.find(config => 
+        config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+        config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
     );
 
-    const colorOptions = currentConfig?.color_options || [];
-    
-    // Filter active colors
-    const activeColors = colorOptions.filter(color => color.is_active);
+    if (!currentConfig?.color_options) {
+        console.error("No color options found in configuration");
+        return;
+    }
+
+    // Filter active colors and sort them
+    const activeColors = currentConfig.color_options
+        .filter(color => color.is_active)
+        .sort((a, b) => (a.price_adjustment || 0) - (b.price_adjustment || 0));
 
     activeColors.forEach((color, index) => {
         const colorOption = document.createElement("div");
@@ -1011,14 +1011,14 @@ renderColorOptions(colors) {
                 this.switchView("exterior");
                 this.currentConfig.color = color.color_name;
 
+                // Update color label and price display
                 if (colorLabel) {
                     colorLabel.textContent = color.color_name;
                 }
                 if (colorPrice) {
-                    colorPrice.textContent =
-                        color.price_adjustment > 0
-                            ? `+NT$${color.price_adjustment}`
-                            : "+NT$0";
+                    colorPrice.textContent = color.price_adjustment > 0
+                        ? `+NT$${color.price_adjustment}`
+                        : "+NT$0";
                 }
 
                 this.updatePriceDisplays();
@@ -1027,14 +1027,15 @@ renderColorOptions(colors) {
             }
         });
 
-        // Initialize first color
+        // Set initial color label and price if this is the first color
         if (index === 0 && input.checked) {
-            colorLabel.textContent = color.color_name;
+            if (colorLabel) {
+                colorLabel.textContent = color.color_name;
+            }
             if (colorPrice) {
-                colorPrice.textContent =
-                    color.price_adjustment > 0
-                        ? `+NT$${color.price_adjustment}`
-                        : "+NT$0";
+                colorPrice.textContent = color.price_adjustment > 0
+                    ? `+NT$${color.price_adjustment}`
+                    : "+NT$0";
             }
         }
     });
@@ -1134,75 +1135,44 @@ renderColorOptions(colors) {
             }
         }
 
-        // Updated updateColorDisplay method to handle multi-image support
+// Update updateColorDisplay method to use color_options
 updateColorDisplay(color) {
-    const currentConfig = this.configurationData.find(
-        (config) =>
-            config._engines.some(
-                (engine) => engine.id === parseInt(this.currentConfig.engine)
-            ) &&
-            config._trims.some(
-                (trim) => trim.id === parseInt(this.currentConfig.trim)
-            )
+    const currentConfig = this.configurationData.find(config =>
+        config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+        config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
     );
 
-    // Get selected color from color_options
-    const selectedColorOption = currentConfig?.color_options?.find(
-        opt => opt.color_name === color.color_name
-    );
-
-    // Handle exterior images
-    const exteriorSlideList = document.querySelector(
-        ".exterior-carousel .splide__list"
-    );
-    
-    if (exteriorSlideList && selectedColorOption?.final_image) {
-        exteriorSlideList.innerHTML = "";
-        
-        // Create slides for each image
-        selectedColorOption.final_image.forEach((image, index) => {
-            if (image && image.url) {
-                const slide = document.createElement("div");
-                slide.className = "splide__slide";
-                slide.innerHTML = `
-                    <img src="${image.url}" 
-                         srcset="${image.url}" 
-                         alt="${this.currentConfig.model.name} - ${color.color_name} Exterior ${index + 1}">
-                `;
-                exteriorSlideList.appendChild(slide);
-            }
-        });
-
-        // Refresh exterior slider
-        if (this.sliders.exterior) {
-            this.sliders.exterior.refresh();
-        }
+    if (!currentConfig?.color_options) {
+        console.error("No color options found");
+        return;
     }
 
-    // Handle interior images (if present in model configuration)
-    const interiorSlideList = document.querySelector(
-        ".interior-carousel .splide__list"
+    const selectedColorOption = currentConfig.color_options.find(opt => 
+        opt.color_name === color.color_name
     );
-    
-    if (interiorSlideList && this.currentConfig.model?.interior_image) {
-        interiorSlideList.innerHTML = "";
-        
-        this.currentConfig.model.interior_image.forEach((image, index) => {
-            if (image && image.url) {
-                const slide = document.createElement("div");
-                slide.className = "splide__slide";
-                slide.innerHTML = `
-                    <img src="${image.url}" 
-                         srcset="${image.url}" 
-                         alt="${this.currentConfig.model.name} Interior ${index + 1}">
-                `;
-                interiorSlideList.appendChild(slide);
-            }
-        });
 
-        // Refresh interior slider
-        if (this.sliders.interior) {
-            this.sliders.interior.refresh();
+    if (selectedColorOption?.final_image?.length > 0) {
+        const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
+        if (exteriorSlideContainer) {
+            exteriorSlideContainer.innerHTML = "";
+            
+            selectedColorOption.final_image.forEach(image => {
+                if (image?.url) {
+                    const slide = document.createElement("div");
+                    slide.className = "splide__slide";
+                    slide.innerHTML = `
+                        <img src="${image.url}" 
+                             srcset="${image.url}" 
+                             alt="${this.currentConfig.model.name} - ${color.color_name} Exterior">
+                    `;
+                    exteriorSlideContainer.appendChild(slide);
+                }
+            });
+
+            // Refresh the exterior slider
+            if (this.sliders.exterior) {
+                this.sliders.exterior.refresh();
+            }
         }
     }
 
