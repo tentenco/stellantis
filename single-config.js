@@ -248,6 +248,63 @@
             }
         }
 
+        // 重置顏色顯示的輔助方法
+resetColorDisplay() {
+    // 重置顏色標籤和價格顯示
+    const colorLabel = document.querySelector(".color-label");
+    const colorPrice = document.querySelector(".color-price");
+    
+    if (colorLabel) {
+        colorLabel.textContent = "請選擇車色";
+    }
+    if (colorPrice) {
+        colorPrice.textContent = "+NT$0";
+    }
+
+    // 重置 radio inputs
+    const colorInputs = document.querySelectorAll('input[name="color"]');
+    colorInputs.forEach(input => {
+        input.checked = false;
+    });
+
+    // 重置當前配置中的顏色
+    this.currentConfig.color = null;
+
+    // 重設為基本圖片
+    this.resetToBaseImages();
+}
+
+// 重置為基本圖片的方法
+resetToBaseImages() {
+    const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
+    if (exteriorSlideContainer && this.currentConfig.model?.base_image) {
+        exteriorSlideContainer.innerHTML = "";
+        
+        // 如果 base_image 是陣列
+        const baseImages = Array.isArray(this.currentConfig.model.base_image) 
+            ? this.currentConfig.model.base_image 
+            : [this.currentConfig.model.base_image];
+
+        baseImages.forEach(image => {
+            if (image?.url) {
+                const slide = document.createElement("div");
+                slide.className = "splide__slide";
+                slide.innerHTML = `
+                    <img src="${image.url}" 
+                         srcset="${image.url}" 
+                         alt="${this.currentConfig.model?.name || ''}"
+                         class="model-image">
+                `;
+                exteriorSlideContainer.appendChild(slide);
+            }
+        });
+
+        if (this.sliders.exterior) {
+            this.sliders.exterior.refresh();
+        }
+    }
+}
+
         async fetchModelBySlug(slug) {
             try {
                 console.log(`Fetching model data for slug: ${slug}`);
@@ -878,6 +935,7 @@
                 this.currentConfig.engine,
                 trimId
             );
+            this.resetColorDisplay();
             this.renderColorOptions(availableColors);
             this.renderAccessoryOptions();
             this.renderSpecifications();
