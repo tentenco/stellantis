@@ -1045,9 +1045,10 @@ resetToBaseImages() {
                 name="color" 
                 id="color-${index}" 
                 value="${color.color_name}" 
-                required
                 data-name="color"
                 data-price="${color.price_adjustment || 0}"
+                required
+                ${this.currentConfig.color?.color_name === color.color_name ? "checked" : ""}>
                 >
             <label for="color-${index}">
                 <img src="${color.swatch_image?.url || ''}" alt="${color.color_name}">
