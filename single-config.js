@@ -1047,6 +1047,8 @@ resetToBaseImages() {
                 value="${color.color_name}" 
                 data-name="color"
                 data-price="${color.price_adjustment || 0}"
+                required
+                class="w-form-formradioinput hide w-radio-input"
                 >
             <label for="color-${index}">
                 <img src="${color.swatch_image?.url || ''}" alt="${color.color_name}">
