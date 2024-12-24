@@ -1037,21 +1037,20 @@ class ConfiguratorPage {
             .sort((a, b) => (a.price_adjustment || 0) - (b.price_adjustment || 0));
 
         activeColors.forEach((color, index) => {
-            const colorOption = document.createElement("label");
-            colorOption.className = "color-swatch w-radio";
-        
-            colorOption.innerHTML = `
-               <input type="radio" 
+                const colorOption = document.createElement("div");
+                colorOption.className = "color-swatch";
+                colorOption.innerHTML = `
+            <input type="radio" 
                 name="color" 
                 id="color-${index}" 
                 value="${color.color_name}" 
                 data-name="color"
                 data-price="${color.price_adjustment || 0}"
-                required 
-                class="w-form-formradioinput w-radio-input">
-            <img src="${color.swatch_image?.url || ''}" alt="${color.color_name}">
-            <span class="w-form-label" for="color-${index}">Radio ${index + 1}</span>
-          `;
+                >
+            <label for="color-${index}">
+                <img src="${color.swatch_image?.url || ''}" alt="${color.color_name}">
+            </label>
+        `;
 
             colorContainer.appendChild(colorOption);
 
