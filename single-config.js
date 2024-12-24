@@ -1261,7 +1261,13 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             localStorage.setItem("formData", JSON.stringify(data));
-            window.location.href = "/peugeot/checkout";
+            
+            // 從當前 URL 路徑中獲取 brand name
+            const pathSegments = window.location.pathname.split('/');
+            const brandName = pathSegments[1]; // 獲取第一個路徑段落作為 brand name
+
+            // 使用動態的 brand name 構建 checkout URL
+            window.location.href = `/${brandName}/checkout`;
         });
     }
 });
