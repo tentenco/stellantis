@@ -1038,30 +1038,20 @@ class ConfiguratorPage {
 
         activeColors.forEach((color, index) => {
             const colorOption = document.createElement("label");
-            colorOption.className = "form_option_wrap w-radio";
-
+            colorOption.className = "color-swatch w-radio";
+        
             colorOption.innerHTML = `
-            <input type="radio" 
+               <input type="radio" 
                 name="color" 
-                id="color-${color.id}" 
+                id="color-${index}" 
+                value="${color.color_name}" 
                 data-name="color"
                 data-price="${color.price_adjustment || 0}"
                 required 
-                class="w-form-formradioinput hide w-radio-input" 
-                value="${color.color_name}"
-                ${index === 0 ? "checked" : ""}>
-            <div class="form_radio_card">
-                <div class="radio_mark">
-                    <div class="radio_dot"></div>
-                </div>
-                <div class="option_content">
-                    <div class="color-swatch">
-                        <img src="${color.swatch_image?.url || ''}" alt="${color.color_name}">
-                    </div>
-                </div>
-            </div>
-            <span class="hide w-form-label" for="color-${color.id}">Color${index + 1}</span>
-        `;
+                class="w-form-formradioinput w-radio-input">
+            <img src="${color.swatch_image?.url || ''}" alt="${color.color_name}">
+            <span class="w-form-label" for="color-${index}">Radio ${index + 1}</span>
+          `;
 
             colorContainer.appendChild(colorOption);
 
