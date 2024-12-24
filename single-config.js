@@ -939,6 +939,7 @@ resetToBaseImages() {
             this.renderColorOptions(availableColors);
             this.renderAccessoryOptions();
             this.renderSpecifications();
+            this.updateSummary();
         }
 
         // Handle accessory updates
@@ -1044,6 +1045,7 @@ resetToBaseImages() {
                 name="color" 
                 id="color-${index}" 
                 value="${color.color_name}" 
+                required
                 data-name="color"
                 data-price="${color.price_adjustment || 0}"
                 >
