@@ -981,7 +981,7 @@ renderColorOptions(colors) {
 
     // Filter active colors and sort them
     const activeColors = currentConfig.color_options
-        .filter(color => color.is_active)
+        .filter(color => color_options.is_active)
         .sort((a, b) => (a.price_adjustment || 0) - (b.price_adjustment || 0));
 
     activeColors.forEach((color, index) => {
