@@ -112,7 +112,7 @@
             } catch (error) {
                 console.error("Initialization error:", error);
                 this.showError("無法載入配置器");
-                
+
                 const loadingScreen = document.getElementById('loading-screen');
                 loadingScreen.classList.add('hidden');
 
@@ -168,7 +168,7 @@
             paymentContents[1].style.display = "none";
 
             paymentInputs.forEach((input) => {
-                input.addEventListener("change", function () {
+                input.addEventListener("change", function() {
                     paymentContents.forEach((content) => (content.style.display = "none"));
                     const selectedContent = document.querySelector(
                         `.payment_content.${this.value}`
@@ -285,77 +285,77 @@
         }
 
         // Modify updateModelInfo method
-updateModelInfo(model) {
-    if (!model) {
-        console.error("Model data is missing or invalid");
-        return;
-    }
+        updateModelInfo(model) {
+            if (!model) {
+                console.error("Model data is missing or invalid");
+                return;
+            }
 
-    // Update model name
-    const modelName = document.getElementById("model-name");
-    if (modelName) {
-        modelName.textContent = model.name || "Unknown Model";
-    }
+            // Update model name
+            const modelName = document.getElementById("model-name");
+            if (modelName) {
+                modelName.textContent = model.name || "Unknown Model";
+            }
 
-    // Update exterior carousel with multiple base images
-    const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
-    if (exteriorSlideContainer && model.base_images && Array.isArray(model.base_images)) {
-        exteriorSlideContainer.innerHTML = "";
-        model.base_images.forEach(image => {
-            if (image?.url) {
-                const slide = document.createElement("div");
-                slide.className = "splide__slide";
-                slide.innerHTML = `
+            // Update exterior carousel with multiple base images
+            const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
+            if (exteriorSlideContainer && model.base_images && Array.isArray(model.base_images)) {
+                exteriorSlideContainer.innerHTML = "";
+                model.base_images.forEach(image => {
+                    if (image?.url) {
+                        const slide = document.createElement("div");
+                        slide.className = "splide__slide";
+                        slide.innerHTML = `
                     <img src="${image.url}" 
                          srcset="${image.url}" 
                          alt="${model.name || 'Model Image'}"
                          class="model-image">
                 `;
-                exteriorSlideContainer.appendChild(slide);
+                        exteriorSlideContainer.appendChild(slide);
+                    }
+                });
             }
-        });
-    }
 
-    // Update model price
-    const modelPrice = document.getElementById("model-price");
-    if (modelPrice) {
-        const formattedPrice = new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "TWD",
-        }).format(model.price || 0);
-        modelPrice.textContent = formattedPrice;
-    }
+            // Update model price
+            const modelPrice = document.getElementById("model-price");
+            if (modelPrice) {
+                const formattedPrice = new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: "TWD",
+                }).format(model.price || 0);
+                modelPrice.textContent = formattedPrice;
+            }
 
-    // Update interior carousel
-    const interiorSlideContainer = document.querySelector(".interior-carousel .splide__list");
-    if (interiorSlideContainer && model.interior_image && model.interior_image.length > 0) {
-        interiorSlideContainer.innerHTML = "";
-        model.interior_image.forEach(image => {
-            if (image?.url) {
-                const slide = document.createElement("div");
-                slide.className = "splide__slide";
-                slide.innerHTML = `
+            // Update interior carousel
+            const interiorSlideContainer = document.querySelector(".interior-carousel .splide__list");
+            if (interiorSlideContainer && model.interior_image && model.interior_image.length > 0) {
+                interiorSlideContainer.innerHTML = "";
+                model.interior_image.forEach(image => {
+                    if (image?.url) {
+                        const slide = document.createElement("div");
+                        slide.className = "splide__slide";
+                        slide.innerHTML = `
                     <img src="${image.url}" 
                          srcset="${image.url}" 
                          alt="${model.name} Interior">
                 `;
-                interiorSlideContainer.appendChild(slide);
-            }
-        });
+                        interiorSlideContainer.appendChild(slide);
+                    }
+                });
 
-        // Reinitialize interior slider
-        if (this.sliders.interior) {
-            this.sliders.interior.destroy();
-            this.sliders.interior = new Splide(".interior-carousel", {
-                type: "slide",
-                perPage: 1,
-                perMove: 1,
-                pagination: false,
-                arrows: true,
-            }).mount();
+                // Reinitialize interior slider
+                if (this.sliders.interior) {
+                    this.sliders.interior.destroy();
+                    this.sliders.interior = new Splide(".interior-carousel", {
+                        type: "slide",
+                        perPage: 1,
+                        perMove: 1,
+                        pagination: false,
+                        arrows: true,
+                    }).mount();
+                }
+            }
         }
-    }
-}
 
         updatePriceDisplays() {
             const basePrice = this.currentConfig.model?.price || 0;
@@ -853,25 +853,19 @@ updateModelInfo(model) {
 
         async getColorsForTrim(engineId, trimId) {
             try {
-                const relevantConfigs = this.configurationData.filter(
+                const relevantConfig = this.configurationData.find(
                     (config) =>
-                        config._engines.some((engine) => engine.id === parseInt(engineId)) &&
-                        config._trims.some((trim) => trim.id === parseInt(trimId))
+                    config._engines.some((engine) => engine.id === parseInt(engineId)) &&
+                    config._trims.some((trim) => trim.id === parseInt(trimId))
                 );
 
-                const uniqueColors = [];
-                const colorSet = new Set();
+                if (!relevantConfig?.color_options) {
+                    console.warn("No color options found in configuration");
+                    return [];
+                }
 
-                relevantConfigs.forEach((config) => {
-                    config._colors.forEach((color) => {
-                        if (!colorSet.has(color.id)) {
-                            colorSet.add(color.id);
-                            uniqueColors.push(color);
-                        }
-                    });
-                });
-
-                return uniqueColors;
+                // 直接返回過濾後的 color_options
+                return relevantConfig.color_options.filter(color => color.is_active);
             } catch (error) {
                 console.error("Error getting color options:", error);
                 return [];
@@ -894,12 +888,12 @@ updateModelInfo(model) {
             const accessories =
                 this.configurationData.find(
                     (config) =>
-                        config._engines.some(
-                            (engine) => engine.id === parseInt(this.currentConfig.engine)
-                        ) &&
-                        config._trims.some(
-                            (trim) => trim.id === parseInt(this.currentConfig.trim)
-                        )
+                    config._engines.some(
+                        (engine) => engine.id === parseInt(this.currentConfig.engine)
+                    ) &&
+                    config._trims.some(
+                        (trim) => trim.id === parseInt(this.currentConfig.trim)
+                    )
                 )?.accessories_id?.[0] || [];
 
             const additionalContainer = document.querySelector(
@@ -955,39 +949,39 @@ updateModelInfo(model) {
                 });
             });
         }
-// Update renderColorOptions method to use color_options
-renderColorOptions(colors) {
-    const colorContainer = document.querySelector(".color-swatches");
-    const colorLabel = document.querySelector(".color-label");
-    const colorPrice = document.querySelector(".color-price");
+        // Update renderColorOptions method to use color_options
+        renderColorOptions(colors) {
+            const colorContainer = document.querySelector(".color-swatches");
+            const colorLabel = document.querySelector(".color-label");
+            const colorPrice = document.querySelector(".color-price");
 
-    if (!colorContainer) {
-        console.error("Color container not found");
-        return;
-    }
+            if (!colorContainer) {
+                console.error("Color container not found");
+                return;
+            }
 
-    colorContainer.innerHTML = "";
+            colorContainer.innerHTML = "";
 
-    // Find the current configuration that matches selected engine and trim
-    const currentConfig = this.configurationData.find(config => 
-        config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
-        config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
-    );
+            // Find the current configuration that matches selected engine and trim
+            const currentConfig = this.configurationData.find(config =>
+                config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+                config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
+            );
 
-    if (!currentConfig?.color_options) {
-        console.error("No color options found in configuration");
-        return;
-    }
+            if (!currentConfig?.color_options) {
+                console.error("No color options found in configuration");
+                return;
+            }
 
-    // Filter active colors and sort them
-    const activeColors = currentConfig.color_options
-        .filter(color => color_options.is_active)
-        .sort((a, b) => (a.price_adjustment || 0) - (b.price_adjustment || 0));
+            // Filter active colors and sort them
+            const activeColors = currentConfig.color_options
+                .filter(color => color.is_active)
+                .sort((a, b) => (a.price_adjustment || 0) - (b.price_adjustment || 0));
 
-    activeColors.forEach((color, index) => {
-        const colorOption = document.createElement("div");
-        colorOption.className = "color-swatch";
-        colorOption.innerHTML = `
+            activeColors.forEach((color, index) => {
+                const colorOption = document.createElement("div");
+                colorOption.className = "color-swatch";
+                colorOption.innerHTML = `
             <input type="radio" 
                 name="color" 
                 id="color-${index}" 
@@ -1000,43 +994,43 @@ renderColorOptions(colors) {
             </label>
         `;
 
-        colorContainer.appendChild(colorOption);
+                colorContainer.appendChild(colorOption);
 
-        const input = colorOption.querySelector("input");
-        input.addEventListener("change", () => {
-            if (input.checked) {
-                this.switchView("exterior");
-                this.currentConfig.color = color.color_name;
+                const input = colorOption.querySelector("input");
+                input.addEventListener("change", () => {
+                    if (input.checked) {
+                        this.switchView("exterior");
+                        this.currentConfig.color = color.color_name;
 
-                // Update color label and price display
-                if (colorLabel) {
-                    colorLabel.textContent = color.color_name;
+                        // Update color label and price display
+                        if (colorLabel) {
+                            colorLabel.textContent = color.color_name;
+                        }
+                        if (colorPrice) {
+                            colorPrice.textContent = color.price_adjustment > 0 ?
+                                `+NT$${color.price_adjustment}` :
+                                "+NT$0";
+                        }
+
+                        this.updatePriceDisplays();
+                        this.updateColorDisplay(color);
+                        this.updateSummary();
+                    }
+                });
+
+                // Set initial color label and price if this is the first color
+                if (index === 0 && input.checked) {
+                    if (colorLabel) {
+                        colorLabel.textContent = color.color_name;
+                    }
+                    if (colorPrice) {
+                        colorPrice.textContent = color.price_adjustment > 0 ?
+                            `+NT$${color.price_adjustment}` :
+                            "+NT$0";
+                    }
                 }
-                if (colorPrice) {
-                    colorPrice.textContent = color.price_adjustment > 0
-                        ? `+NT$${color.price_adjustment}`
-                        : "+NT$0";
-                }
-
-                this.updatePriceDisplays();
-                this.updateColorDisplay(color);
-                this.updateSummary();
-            }
-        });
-
-        // Set initial color label and price if this is the first color
-        if (index === 0 && input.checked) {
-            if (colorLabel) {
-                colorLabel.textContent = color.color_name;
-            }
-            if (colorPrice) {
-                colorPrice.textContent = color.price_adjustment > 0
-                    ? `+NT$${color.price_adjustment}`
-                    : "+NT$0";
-            }
+            });
         }
-    });
-}
 
         renderSpecifications() {
             const currentConfig = this.configurationData.find(config =>
@@ -1132,49 +1126,49 @@ renderColorOptions(colors) {
             }
         }
 
-// Update updateColorDisplay method to use color_options
-updateColorDisplay(color) {
-    const currentConfig = this.configurationData.find(config =>
-        config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
-        config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
-    );
+        // Update updateColorDisplay method to use color_options
+        updateColorDisplay(color) {
+            const currentConfig = this.configurationData.find(config =>
+                config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+                config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
+            );
 
-    if (!currentConfig?.color_options) {
-        console.error("No color options found");
-        return;
-    }
+            if (!currentConfig?.color_options) {
+                console.error("No color options found");
+                return;
+            }
 
-    const selectedColorOption = currentConfig.color_options.find(opt => 
-        opt.color_name === color.color_name
-    );
+            const selectedColorOption = currentConfig.color_options.find(opt =>
+                opt.color_name === color.color_name
+            );
 
-    if (selectedColorOption?.final_image?.length > 0) {
-        const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
-        if (exteriorSlideContainer) {
-            exteriorSlideContainer.innerHTML = "";
-            
-            selectedColorOption.final_image.forEach(image => {
-                if (image?.url) {
-                    const slide = document.createElement("div");
-                    slide.className = "splide__slide";
-                    slide.innerHTML = `
+            if (selectedColorOption?.final_image?.length > 0) {
+                const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
+                if (exteriorSlideContainer) {
+                    exteriorSlideContainer.innerHTML = "";
+
+                    selectedColorOption.final_image.forEach(image => {
+                        if (image?.url) {
+                            const slide = document.createElement("div");
+                            slide.className = "splide__slide";
+                            slide.innerHTML = `
                         <img src="${image.url}" 
                              srcset="${image.url}" 
                              alt="${this.currentConfig.model.name} - ${color.color_name} Exterior">
                     `;
-                    exteriorSlideContainer.appendChild(slide);
+                            exteriorSlideContainer.appendChild(slide);
+                        }
+                    });
+
+                    // Refresh the exterior slider
+                    if (this.sliders.exterior) {
+                        this.sliders.exterior.refresh();
+                    }
                 }
-            });
-
-            // Refresh the exterior slider
-            if (this.sliders.exterior) {
-                this.sliders.exterior.refresh();
             }
-        }
-    }
 
-    this.refreshSliders();
-}
+            this.refreshSliders();
+        }
     }
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -1182,7 +1176,7 @@ updateColorDisplay(color) {
 
         const submitButton = document.querySelector('input[type="submit"][data-form="submit-btn"]');
         if (submitButton) {
-            submitButton.addEventListener("click", function (e) {
+            submitButton.addEventListener("click", function(e) {
                 e.preventDefault();
                 const form = submitButton.closest("form");
                 const formData = new FormData(form);
