@@ -1008,7 +1008,7 @@ class ConfiguratorPage {
         });
     }
     // Update renderColorOptions method to use color_options
-    renderColorOptions(colors) {
+renderColorOptions(colors) {
     const colorContainer = document.querySelector(".color-swatches");
     const colorLabel = document.querySelector(".color-label");
     const colorPrice = document.querySelector(".color-price");
@@ -1035,38 +1035,32 @@ class ConfiguratorPage {
         .filter(color => color.is_active)
         .sort((a, b) => (a.price_adjustment || 0) - (b.price_adjustment || 0));
 
-    // Create a hidden validation input
-    const validationInput = document.createElement('input');
-    validationInput.type = 'hidden';
-    validationInput.name = 'color-validation';
-    validationInput.required = true;
-    validationInput.id = 'color-validation';
-    colorContainer.appendChild(validationInput);
-
     activeColors.forEach((color, index) => {
-        const colorOption = document.createElement("div");
-        colorOption.className = "color-swatch";
-        colorOption.innerHTML = `
+        const label = document.createElement("label");
+        label.className = "color-swatch native w-radio";
+        
+        label.innerHTML = `
             <input type="radio" 
-                name="color" 
+                name="Color" 
                 id="color-${index}" 
-                value="${color.color_name}" 
-                data-name="color"
+                data-name="Color"
+                class="w-form-formradioinput hide w-radio-input"
+                value="${color.color_name}"
                 data-price="${color.price_adjustment || 0}"
                 required>
-            <label for="color-${index}">
-                <img src="${color.swatch_image?.url || ''}" alt="${color.color_name}">
-            </label>
+            <img loading="lazy" 
+                src="${color.swatch_image?.url || ''}" 
+                alt="${color.color_name}">
+            <span class="color-swatch-label w-form-label" 
+                for="color-${index}">
+            </span>
         `;
 
-        colorContainer.appendChild(colorOption);
+        colorContainer.appendChild(label);
 
-        const input = colorOption.querySelector("input");
+        const input = label.querySelector("input");
         input.addEventListener("change", () => {
             if (input.checked) {
-                // Update the validation input
-                validationInput.value = input.value;
-                
                 this.switchView("exterior");
                 this.currentConfig.color = color.color_name;
 
@@ -1087,7 +1081,6 @@ class ConfiguratorPage {
 
         // Set initial color label and price if this is the first color
         if (index === 0 && input.checked) {
-            validationInput.value = input.value;
             if (colorLabel) {
                 colorLabel.textContent = color.color_name;
             }
@@ -1096,19 +1089,6 @@ class ConfiguratorPage {
                     `+NT$${color.price_adjustment}` :
                     "+NT$0";
             }
-        }
-    });
-}
-  // Add this method to handle form validation
-initializeFormValidation() {
-    const form = document.querySelector('form');
-    if (!form) return;
-
-    form.addEventListener('submit', (e) => {
-        const colorValidation = document.getElementById('color-validation');
-        if (!colorValidation || !colorValidation.value) {
-            e.preventDefault();
-            alert('Please select a color');
         }
     });
 }
