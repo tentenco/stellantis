@@ -1067,7 +1067,7 @@ class ConfiguratorPage {
                     }
                     if (colorPrice) {
                         colorPrice.textContent = color.price_adjustment > 0 ?
-                            `+NT$${color.price_adjustment}` :
+                            `+NT$${color.price_adjustment.toLocaleString('en-US')}` :
                             "+NT$0";
                     }
 
