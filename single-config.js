@@ -1048,6 +1048,7 @@ class ConfiguratorPage {
                 value="${color.color_name}" 
                 data-name="color"
                 data-price="${color.price_adjustment || 0}"
+                ${index === 0 ? 'checked' : ''}
                 >
             <label for="color-${index}">
                 <img src="${color.swatch_image?.url || ''}" alt="${color.color_name}">
@@ -1080,16 +1081,11 @@ class ConfiguratorPage {
             });
 
             // Set initial color label and price if this is the first color
-            if (index === 0 && input.checked) {
-                if (colorLabel) {
-                    colorLabel.textContent = color.color_name;
-                }
-                if (colorPrice) {
-                    colorPrice.textContent = color.price_adjustment > 0 ?
-                        `+NT$${color.price_adjustment}` :
-                        "+NT$0";
-                }
-            }
+            const firstColorInput = colorContainer.querySelector('input[type="radio"]');
+            if (firstColorInput) {
+                firstColorInput.checked = true;
+                firstColorInput.dispatchEvent(new Event('change'));
+            } 
         });
     }
 
@@ -1188,48 +1184,49 @@ class ConfiguratorPage {
     }
 
     // Update updateColorDisplay method to use color_options
-    updateColorDisplay(color) {
-        const currentConfig = this.configurationData.find(config =>
-            config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
-            config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
-        );
+updateColorDisplay(color) {
+    const currentConfig = this.configurationData.find(config =>
+        config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+        config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
+    );
 
-        if (!currentConfig?.color_options) {
-            console.error("No color options found");
-            return;
-        }
+    if (!currentConfig?.color_options) {
+        console.error("No color options found");
+        return;
+    }
 
-        const selectedColorOption = currentConfig.color_options.find(opt =>
-            opt.color_name === color.color_name
-        );
+    const selectedColorOption = currentConfig.color_options.find(opt =>
+        opt.color_name === color.color_name
+    );
 
-        if (selectedColorOption?.final_image?.length > 0) {
-            const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
-            if (exteriorSlideContainer) {
-                exteriorSlideContainer.innerHTML = "";
+    if (selectedColorOption?.final_image?.length > 0) {
+        const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
+        if (exteriorSlideContainer) {
+            exteriorSlideContainer.innerHTML = "";
 
-                selectedColorOption.final_image.forEach(image => {
-                    if (image?.url) {
-                        const slide = document.createElement("div");
-                        slide.className = "splide__slide";
-                        slide.innerHTML = `
+            selectedColorOption.final_image.forEach(image => {
+                if (image?.url) {
+                    const slide = document.createElement("div");
+                    slide.className = "splide__slide";
+                    slide.innerHTML = `
                         <img src="${image.url}" 
                              srcset="${image.url}" 
-                             alt="${this.currentConfig.model.name} - ${color.color_name} Exterior">
+                             alt="${this.currentConfig.model.name} - ${color.color_name} Exterior"
+                             class="model-image">
                     `;
-                        exteriorSlideContainer.appendChild(slide);
-                    }
-                });
-
-                // Refresh the exterior slider
-                if (this.sliders.exterior) {
-                    this.sliders.exterior.refresh();
+                    exteriorSlideContainer.appendChild(slide);
                 }
+            });
+
+            // Refresh the exterior slider
+            if (this.sliders.exterior) {
+                this.sliders.exterior.refresh();
             }
         }
-
-        this.refreshSliders();
     }
+
+    this.refreshSliders();
+}
 }
 
 document.addEventListener("DOMContentLoaded", () => {
