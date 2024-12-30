@@ -72,6 +72,21 @@ class ConfiguratorPage {
         }
 
         this.initializePaymentToggle();
+        // Add color option click handler for mobile/tablet
+      const colorOptions = document.querySelectorAll('input[name="color"]');
+      colorOptions.forEach(input => {
+        input.addEventListener('change', () => {
+          if (window.innerWidth <= 991) {
+            const carouselSection = document.querySelector('.exterior-carousel');
+            if (carouselSection) {
+              carouselSection.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+              });
+            }
+          }
+        });
+      });
     }
 
     getBrandIdFromSlug(brandSlug) {
