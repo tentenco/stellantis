@@ -546,7 +546,7 @@ class ConfiguratorPage {
         );
 
         dealerContainer.style.display = "block";
-        dealersInArea.forEach(dealer => {
+        dealersInArea.forEach((dealer, index) => {
             const dealerOption = document.createElement("label");
             dealerOption.className = "form_option_wrap w-radio";
             dealerOption.innerHTML = `
