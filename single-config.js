@@ -557,7 +557,9 @@ class ConfiguratorPage {
                 required 
                 class="w-form-formradioinput hide w-radio-input" 
                 value="${dealer._dealers?.name}"
-                data-address="${dealer._dealers?.address || ''}">
+                data-address="${dealer._dealers?.address || ''}"
+                data-phone="${dealer._dealers?.phone || ''}"
+                ${index === 0 ? "checked" : ""}>
             <div class="form_radio_card">
                 <div class="radio_mark">
                     <div class="radio_dot"></div>
@@ -1254,6 +1256,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (selectedDealer) {
                 data.dealerName = selectedDealer.value;
                 data.dealerAddress = selectedDealer.dataset.address;
+                data.dealerPhone = selectedDealer.dataset.phone;
             }
 
             const configuratorInstance = window.configuratorInstance;
