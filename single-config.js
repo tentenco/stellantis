@@ -304,21 +304,30 @@ class ConfiguratorPage {
         }
     }
     // Add this method to handle scrolling to the carousel
-    scrollToCarousel() {
-        // Check if it's mobile view (you can adjust the width as needed)
-        if (window.innerWidth <= 767) {
-           const carousel = document.querySelector('.exterior-carousel');
-           if (carousel) {
+scrollToCarousel() {
+    // Check if it's mobile view (you can adjust the width as needed)
+    if (window.innerWidth <= 767) {
+        const carousel = document.querySelector('.exterior-carousel');
+        if (carousel) {
             // Add a small delay to ensure the DOM is updated
             setTimeout(() => {
-                carousel.scrollIntoView({ 
-                    behavior: 'smooth',
-                    block: 'start'
+                // Get the navbar height
+                const navbar = document.querySelector('.nav_container');
+                const navbarHeight = navbar ? navbar.offsetHeight : 0;
+                
+                // Calculate the scroll position with offset
+                const carouselPosition = carousel.getBoundingClientRect().top + window.pageYOffset;
+                const scrollPosition = carouselPosition - navbarHeight - 20; // 20px extra padding
+                
+                // Smooth scroll to position
+                window.scrollTo({
+                    top: scrollPosition,
+                    behavior: 'smooth'
                 });
             }, 100);
-          }
-       }  
+        }
     }
+  }
 
     async fetchModelBySlug(slug) {
         try {
