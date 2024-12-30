@@ -557,7 +557,10 @@ class ConfiguratorPage {
                 required 
                 class="w-form-formradioinput hide w-radio-input" 
                 value="${dealer._dealers?.name}"
-                data-address="${dealer._dealers?.address || ''}">
+                data-address="${dealer._dealers?.address || ''}"
+                data-phone="${dealer._dealers?.phone || ''}"
+                ${index === 0 ? "checked" : ""}
+                >
             <div class="form_radio_card">
                 <div class="radio_mark">
                     <div class="radio_dot"></div>
@@ -1047,7 +1050,7 @@ renderColorOptions(colors) {
                 class="w-form-formradioinput hide w-radio-input"
                 value="${color.color_name}"
                 data-price="${color.price_adjustment || 0}"
-                required>
+                ${index === 0 ? "checked" : ""}>
             <img loading="lazy" 
                 src="${color.swatch_image?.url || ''}" 
                 alt="${color.color_name}">
@@ -1255,6 +1258,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (selectedDealer) {
                 data.dealerName = selectedDealer.value;
                 data.dealerAddress = selectedDealer.dataset.address;
+                data.dealerPhone = selectedDealer.dataset.phone;
             }
 
             const configuratorInstance = window.configuratorInstance;
