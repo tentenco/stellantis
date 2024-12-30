@@ -72,18 +72,6 @@ class ConfiguratorPage {
         }
 
         this.initializePaymentToggle();
-        // Add color option click handler for mobile/tablet
-      const colorOptions = document.querySelectorAll('input[name="color"]');
-      colorOptions.forEach(input => {
-        input.addEventListener('change', () => {
-          if (window.innerWidth <= 991) {
-            window.scrollTo({
-              top: 0,
-              behavior: 'smooth'
-            });
-          }
-        });
-      });
     }
 
     getBrandIdFromSlug(brandSlug) {
