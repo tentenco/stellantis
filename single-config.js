@@ -77,13 +77,10 @@ class ConfiguratorPage {
       colorOptions.forEach(input => {
         input.addEventListener('change', () => {
           if (window.innerWidth <= 991) {
-            const carouselSection = document.querySelector('.exterior-carousel');
-            if (carouselSection) {
-              carouselSection.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-              });
-            }
+            window.scrollTo({
+              top: 0,
+              behavior: 'smooth'
+            });
           }
         });
       });
