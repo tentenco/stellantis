@@ -303,6 +303,22 @@ class ConfiguratorPage {
             }
         }
     }
+    // Add this method to handle scrolling to the carousel
+    scrollToCarousel() {
+        // Check if it's mobile view (you can adjust the width as needed)
+        if (window.innerWidth <= 767) {
+           const carousel = document.querySelector('.exterior-carousel');
+           if (carousel) {
+            // Add a small delay to ensure the DOM is updated
+            setTimeout(() => {
+                carousel.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 100);
+          }
+       }  
+    }
 
     async fetchModelBySlug(slug) {
         try {
@@ -1077,6 +1093,8 @@ class ConfiguratorPage {
                     this.updatePriceDisplays();
                     this.updateColorDisplay(color);
                     this.updateSummary();
+
+                    this.scrollToCarousel();
                 }
             });
 
@@ -1221,6 +1239,9 @@ updateColorDisplay(color) {
             // Refresh the exterior slider
             if (this.sliders.exterior) {
                 this.sliders.exterior.refresh();
+                setTimeout(() => {
+                    this.scrollToCarousel();
+                }, 100);
             }
         }
     }
