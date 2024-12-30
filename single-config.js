@@ -312,7 +312,7 @@ scrollToCarousel() {
             // Add a small delay to ensure the DOM is updated
             setTimeout(() => {
                 // Get the navbar height
-                const navbar = document.querySelector('.nav_container');
+                const navbar = document.querySelector('.nav_wrap');
                 const navbarHeight = navbar ? navbar.offsetHeight : 0;
                 
                 // Calculate the scroll position with offset
