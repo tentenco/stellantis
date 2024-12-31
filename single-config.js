@@ -367,76 +367,78 @@ scrollToCarousel() {
 
     // Modify updateModelInfo method
     updateModelInfo(model) {
-        if (!model) {
-            console.error("Model data is missing or invalid");
-            return;
-        }
+    if (!model) {
+        console.error("Model data is missing or invalid");
+        return;
+    }
 
-        // Update model name
-        const modelName = document.getElementById("model-name");
-        if (modelName) {
-            modelName.textContent = model.name || "Unknown Model";
-        }
+    // Update model name
+    const modelName = document.getElementById("model-name");
+    if (modelName) {
+        modelName.textContent = model.name || "Unknown Model";
+    }
 
-        // Update exterior carousel with multiple base images
-        const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
-        if (exteriorSlideContainer && model.base_images && Array.isArray(model.base_images)) {
-            exteriorSlideContainer.innerHTML = "";
-            model.base_images.forEach(image => {
-                if (image?.url) {
-                    const slide = document.createElement("div");
-                    slide.className = "splide__slide";
-                    slide.innerHTML = `
+    // Update exterior carousel with multiple base images
+    const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
+    if (exteriorSlideContainer && model.base_images && Array.isArray(model.base_images)) {
+        exteriorSlideContainer.innerHTML = "";
+        model.base_images.forEach(image => {
+            if (image?.url) {
+                const slide = document.createElement("div");
+                slide.className = "splide__slide";
+                slide.innerHTML = `
                     <img src="${image.url}" 
                          srcset="${image.url}" 
                          alt="${model.name || 'Model Image'}"
                          class="model-image">
                 `;
-                    exteriorSlideContainer.appendChild(slide);
-                }
-            });
-        }
-
-        // Update model price
-        const modelPrice = document.getElementById("model-price");
-        if (modelPrice) {
-            const formattedPrice = new Intl.NumberFormat("en-US", {
-                style: "currency",
-                currency: "TWD",
-            }).format(model.price || 0);
-            modelPrice.textContent = formattedPrice;
-        }
-
-        // Update interior carousel
-        const interiorSlideContainer = document.querySelector(".interior-carousel .splide__list");
-        if (interiorSlideContainer && model.interior_image && model.interior_image.length > 0) {
-            interiorSlideContainer.innerHTML = "";
-            model.interior_image.forEach(image => {
-                if (image?.url) {
-                    const slide = document.createElement("div");
-                    slide.className = "splide__slide";
-                    slide.innerHTML = `
-                    <img src="${image.url}" 
-                         srcset="${image.url}" 
-                         alt="${model.name} Interior">
-                `;
-                    interiorSlideContainer.appendChild(slide);
-                }
-            });
-
-            // Reinitialize interior slider
-            if (this.sliders.interior) {
-                this.sliders.interior.destroy();
-                this.sliders.interior = new Splide(".interior-carousel", {
-                    type: "slide",
-                    perPage: 1,
-                    perMove: 1,
-                    pagination: false,
-                    arrows: true,
-                }).mount();
+                exteriorSlideContainer.appendChild(slide);
             }
-        }
+        });
     }
+
+    // Update model price
+    const modelPrice = document.getElementById("model-price");
+    if (modelPrice) {
+        const formattedPrice = new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: "TWD",
+        }).format(model.price || 0);
+        modelPrice.textContent = formattedPrice;
+    }
+}
+    
+updateInteriorImages(trimData) {
+    const interiorSlideContainer = document.querySelector(".interior-carousel .splide__list");
+    if (!interiorSlideContainer || !trimData.interior_image) return;
+
+    interiorSlideContainer.innerHTML = "";
+    
+    trimData.interior_image.forEach(image => {
+        if (image?.url) {
+            const slide = document.createElement("div");
+            slide.className = "splide__slide";
+            slide.innerHTML = `
+                <img src="${image.url}" 
+                     srcset="${image.url}" 
+                     alt="${this.currentConfig.model?.name || ''} Interior">
+            `;
+            interiorSlideContainer.appendChild(slide);
+        }
+    });
+
+    // Reinitialize interior slider
+    if (this.sliders.interior) {
+        this.sliders.interior.destroy();
+        this.sliders.interior = new Splide(".interior-carousel", {
+            type: "slide",
+            perPage: 1,
+            perMove: 1,
+            pagination: false,
+            arrows: true,
+        }).mount();
+    }
+}
 
     updatePriceDisplays() {
         const basePrice = this.currentConfig.model?.price || 0;
@@ -955,18 +957,33 @@ scrollToCarousel() {
         }
     }
 
-    async handleTrimChange(trimId) {
-        this.currentConfig.trim = trimId;
-        const availableColors = await this.getColorsForTrim(
-            this.currentConfig.engine,
-            trimId
-        );
-        this.resetColorDisplay();
-        this.renderColorOptions(availableColors);
-        this.renderAccessoryOptions();
-        this.renderSpecifications();
-        this.updateSummary();
+async handleTrimChange(trimId) {
+    this.currentConfig.trim = trimId;
+    
+    // Find the current configuration and trim data
+    const currentConfig = this.configurationData.find(
+        config => config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+                 config._trims.some(trim => trim.id === parseInt(trimId))
+    );
+    
+    const trimData = currentConfig?._trims?.find(trim => trim.id === parseInt(trimId));
+    
+    if (trimData) {
+        // Update interior images for the selected trim
+        this.updateInteriorImages(trimData);
     }
+
+    const availableColors = await this.getColorsForTrim(
+        this.currentConfig.engine,
+        trimId
+    );
+    
+    this.resetColorDisplay();
+    this.renderColorOptions(availableColors);
+    this.renderAccessoryOptions();
+    this.renderSpecifications();
+    this.updateSummary();
+}
 
     // Handle accessory updates
     renderAccessoryOptions() {
