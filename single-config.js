@@ -876,6 +876,10 @@ updateInteriorImages(trimData) {
             );
 
             const trimPrice = trimConfig ? trimConfig.trim_price : 0;
+            // 格式化價格，加入千分位
+             const formattedPrice = trimPrice > 0 ? 
+                 `+NT$${trimPrice.toLocaleString('en-US')}` : 
+                  "+NT$0";
 
             const trimOption = document.createElement("label");
             trimOption.className = "form_option_wrap w-radio";
@@ -922,7 +926,7 @@ updateInteriorImages(trimData) {
                         const modelPrice = this.currentConfig.model?.price || 0;
                         const trimPrice = trim.price_adjustment || 0;
                         const totalPrice = modelPrice + trimPrice;
-                        summaryTrimPrice.textContent = `NT$${totalPrice.toLocaleString()}`;
+                        summaryTrimPrice.textContent = `NT$${totalPrice.toLocaleString('en-US')}`;
                     }
                     this.updatePriceDisplays();
                     this.handleTrimChange(trim.id);
