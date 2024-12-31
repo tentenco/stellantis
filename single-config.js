@@ -853,92 +853,91 @@ updateInteriorImages(trimData) {
         }
     }
 
-    renderTrimOptions(trims) {
-        console.log("Rendering trim options:", trims);
+renderTrimOptions(trims) {
+    console.log("Rendering trim options:", trims);
 
-        const summaryTrimPrice = document.getElementById("summary-trim-price");
-        const trimContainer = document.querySelector(
-            ".trim-selection .radio-group"
+    const summaryTrimPrice = document.getElementById("summary-trim-price");
+    const trimContainer = document.querySelector(
+        ".trim-selection .radio-group"
+    );
+
+    if (!trimContainer) {
+        console.error("Trim container not found");
+        return;
+    }
+
+    trimContainer.innerHTML = "";
+
+    // Find the configuration data for each trim
+    trims.forEach((trim, index) => {
+        // Find the matching configuration for this trim
+        const trimConfig = this.configurationData.find((config) =>
+            config._trims.some((t) => t.id === trim.id)
         );
 
-        if (!trimContainer) {
-            console.error("Trim container not found");
-            return;
-        }
+        const trimPrice = trimConfig ? trimConfig.trim_price : 0;
+        // 格式化價格，加入千分位
+        const formattedPrice = trimPrice > 0 ? 
+            `+NT$${trimPrice.toLocaleString('en-US')}` : 
+            "+NT$0";
 
-        trimContainer.innerHTML = "";
-
-        // Find the configuration data for each trim
-        trims.forEach((trim, index) => {
-            // Find the matching configuration for this trim
-            const trimConfig = this.configurationData.find((config) =>
-                config._trims.some((t) => t.id === trim.id)
-            );
-
-            const trimPrice = trimConfig ? trimConfig.trim_price : 0;
-            // 格式化價格，加入千分位
-             const formattedPrice = trimPrice > 0 ? 
-                 `+NT$${trimPrice.toLocaleString('en-US')}` : 
-                  "+NT$0";
-
-            const trimOption = document.createElement("label");
-            trimOption.className = "form_option_wrap w-radio";
-            trimOption.innerHTML = `
-                <input type="radio" 
-                    name="trim" 
-                    id="trim-${trim.id}" 
-                    data-name="trim"
-                    data-price="${trimPrice}"
-                    required 
-                    class="w-form-formradioinput hide w-radio-input" 
-                    value="${trim.name}"
-                    ${index === 0 ? "checked" : ""}>
-                <div class="form_radio_card">
-                    <div class="radio_mark">
-                        <div class="radio_dot"></div>
-                    </div>
-                    <div class="option_content">
-                        <div class="option_title_row">
-                            <div class="u-weight-bold">${trim.name}</div>
-                            <div>${trimPrice > 0 ? `+NT$${trimPrice}` : "+NT$0"
-                    }</div>
-                        </div>
-                        <div>${trim.description || ""}</div>
-                        <a href="${trim.pdf?.url || '#'}" 
-                            target="_blank" 
-                            class="text_link_secondary w-inline-block"
-                            ${!trim.pdf?.url ? 'style="display:none;"' : ''}>
-                                <div>檢視詳細規格表ⓘ</div>
-                        </a>
-                    </div>
+        const trimOption = document.createElement("label");
+        trimOption.className = "form_option_wrap w-radio";
+        trimOption.innerHTML = `
+            <input type="radio" 
+                name="trim" 
+                id="trim-${trim.id}" 
+                data-name="trim"
+                data-price="${trimPrice}"
+                required 
+                class="w-form-formradioinput hide w-radio-input" 
+                value="${trim.name}"
+                ${index === 0 ? "checked" : ""}>
+            <div class="form_radio_card">
+                <div class="radio_mark">
+                    <div class="radio_dot"></div>
                 </div>
-                <span class="hide w-form-label" for="trim-${trim.id}">Trim${index + 1
-                    }</span>
-            `;
+                <div class="option_content">
+                    <div class="option_title_row">
+                        <div class="u-weight-bold">${trim.name}</div>
+                        <div>${formattedPrice}</div>
+                    </div>
+                    <div>${trim.description || ""}</div>
+                    <a href="${trim.pdf?.url || '#'}" 
+                        target="_blank" 
+                        class="text_link_secondary w-inline-block"
+                        ${!trim.pdf?.url ? 'style="display:none;"' : ''}>
+                            <div>檢視詳細規格表ⓘ</div>
+                    </a>
+                </div>
+            </div>
+            <span class="hide w-form-label" for="trim-${trim.id}">Trim${index + 1}</span>
+        `;
 
-            trimContainer.appendChild(trimOption);
+        trimContainer.appendChild(trimOption);
 
-            const input = trimOption.querySelector("input");
-            input.addEventListener("change", () => {
-                if (input.checked) {
-                    this.currentConfig.trim = trim.id;
-                    if (summaryTrimPrice) {
-                        const modelPrice = this.currentConfig.model?.price || 0;
-                        const trimPrice = trim.price_adjustment || 0;
-                        const totalPrice = modelPrice + trimPrice;
-                        summaryTrimPrice.textContent = `NT$${totalPrice.toLocaleString('en-US')}`;
-                    }
-                    this.updatePriceDisplays();
-                    this.handleTrimChange(trim.id);
-                    this.updateSummary();
+        const input = trimOption.querySelector("input");
+        input.addEventListener("change", () => {
+            if (input.checked) {
+                this.currentConfig.trim = trim.id;
+                if (summaryTrimPrice) {
+                    const modelPrice = this.currentConfig.model?.price || 0;
+                    const trimPrice = trim.price_adjustment || 0;
+                    const totalPrice = modelPrice + trimPrice;
+                    // 格式化總價，加入千分位
+                    summaryTrimPrice.textContent = `NT$${totalPrice.toLocaleString('en-US')}`;
                 }
-            });
-
-            if (index === 0) {
-                input.dispatchEvent(new Event("change"));
+                this.updatePriceDisplays();
+                this.handleTrimChange(trim.id);
+                this.updateSummary();
             }
         });
-    }
+
+        if (index === 0) {
+            input.dispatchEvent(new Event("change"));
+        }
+    });
+}
 
     async getColorsForTrim(engineId, trimId) {
         try {
