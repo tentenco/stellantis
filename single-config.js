@@ -207,24 +207,22 @@ class ConfiguratorPage {
     updateInstallmentOptions() {
         const modelPriceElement = document.getElementById("model-price");
         if (!modelPriceElement) return;
-
+    
         // Get total price from the displayed price
         const totalPrice = parseInt(
             modelPriceElement.textContent.replace(/[^0-9]/g, "")
         );
-
+    
         const installmentPrice = document.getElementById("installment-price");
         if (!installmentPrice) return;
-
-        // Calculate max option based on total price
-        const maxOption = Math.floor(totalPrice / 10000 / 5) * 5; // Round up to nearest multiple of 5
-
-        // Generate options from 30 to maxOption in increments of 5
-        let options = ['<option value="">請選擇分期金額</option>'];
-        for (let i = 30; i <= maxOption; i += 5) {
-            options.push(`<option value="${i}">${i}</option>`);
+    
+        // Calculate down payment options (20% to 50% of total price in 5% increments)
+        let options = ['<option value="">請選擇頭期款金額</option>'];
+        for (let percentage = 20; percentage <= 50; percentage += 5) {
+            const downPayment = Math.round(totalPrice * (percentage / 100));
+            options.push(`<option value="${downPayment}">${percentage}% - NT$${downPayment.toLocaleString()}</option>`);
         }
-
+    
         installmentPrice.innerHTML = options.join("");
     }
 
@@ -232,19 +230,22 @@ class ConfiguratorPage {
         const installmentPrice = document.getElementById("installment-price");
         const installmentMonth = document.getElementById("installment-month");
         const monthlyPaymentElement = document.getElementById("monthly-payment");
-
-        if (!installmentPrice || !installmentMonth || !monthlyPaymentElement) return;
-
-        // Get selected values for installment price and months
-        const selectedPrice = parseInt(installmentPrice.value) || 0; // In ten-thousands (e.g., 30 represents 300,000)
+        const modelPriceElement = document.getElementById("model-price");
+    
+        if (!installmentPrice || !installmentMonth || !monthlyPaymentElement || !modelPriceElement) return;
+    
+        // Get total price and selected values
+        const totalPrice = parseInt(modelPriceElement.textContent.replace(/[^0-9]/g, ""));
+        const downPayment = parseInt(installmentPrice.value) || 0;
         const selectedMonths = parseInt(installmentMonth.value) || 0;
-
+    
         // Calculate monthly payment only if both values are selected
-        if (selectedPrice > 0 && selectedMonths > 0) {
-            const monthlyPayment = Math.round((selectedPrice * 10000) / selectedMonths); // Convert price to actual value
+        if (downPayment > 0 && selectedMonths > 0) {
+            const remainingAmount = totalPrice - downPayment;
+            const monthlyPayment = Math.round(remainingAmount / selectedMonths);
             monthlyPaymentElement.textContent = `NT$${monthlyPayment.toLocaleString()}`;
         } else {
-            monthlyPaymentElement.textContent = "--"; // Placeholder when no valid selection
+            monthlyPaymentElement.textContent = "--";
         }
     }
 
