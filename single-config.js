@@ -35,6 +35,27 @@ class ConfiguratorPage {
                 pagination: false,
                 arrows: true,
             }).mount();
+            // Add this new code for exterior carousel
+            const prevArrow = exteriorElement.querySelector('.splide__arrow--prev');
+            const nextArrow = exteriorElement.querySelector('.splide__arrow--next');
+            
+            this.sliders.exterior.on('mounted moved', function() {
+                if (this.isBeginning()) {
+                    prevArrow.setAttribute('disabled', 'true');
+                    prevArrow.style.visibility = 'hidden';
+                } else {
+                    prevArrow.removeAttribute('disabled');
+                    prevArrow.style.visibility = 'visible';
+                }
+                
+                if (this.isEnd()) {
+                    nextArrow.setAttribute('disabled', 'true');
+                    nextArrow.style.visibility = 'hidden';
+                } else {
+                    nextArrow.removeAttribute('disabled');
+                    nextArrow.style.visibility = 'visible';
+                }
+            });
             exteriorElement.style.display = "block";
         }
         // 初始化內裝輪播
@@ -48,6 +69,27 @@ class ConfiguratorPage {
                 arrows: true,
                 gap: "1em",
             }).mount();
+            // Add this new code for interior carousel
+            const prevArrow = interiorElement.querySelector('.splide__arrow--prev');
+            const nextArrow = interiorElement.querySelector('.splide__arrow--next');
+            
+            this.sliders.interior.on('mounted moved', function() {
+                if (this.isBeginning()) {
+                    prevArrow.setAttribute('disabled', 'true');
+                    prevArrow.style.visibility = 'hidden';
+                } else {
+                    prevArrow.removeAttribute('disabled');
+                    prevArrow.style.visibility = 'visible';
+                }
+                
+                if (this.isEnd()) {
+                    nextArrow.setAttribute('disabled', 'true');
+                    nextArrow.style.visibility = 'hidden';
+                } else {
+                    nextArrow.removeAttribute('disabled');
+                    nextArrow.style.visibility = 'visible';
+                }
+            });
             interiorElement.style.display = "none";
         }
         // 設置初始視圖狀態
@@ -217,7 +259,7 @@ class ConfiguratorPage {
         if (!installmentPrice) return;
     
         // Calculate down payment options (20% to 50% of total price in 5% increments)
-        let options = ['<option value="">請選擇頭期款金額</option>'];
+        let options = ['<option value="">請選擇自備款金額</option>'];
         for (let percentage = 20; percentage <= 50; percentage += 5) {
             const downPayment = Math.round(totalPrice * (percentage / 100));
             options.push(`<option value="${downPayment}">${percentage}% - NT$${downPayment.toLocaleString()}</option>`);
