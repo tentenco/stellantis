@@ -25,75 +25,50 @@ class ConfiguratorPage {
     }
 
     initializeSliders() {
-        // 初始化外裝輪播
+        // Initialize exterior carousel
         const exteriorElement = document.querySelector(".exterior-carousel");
-        if (exteriorElement) {
-            this.sliders.exterior = new Splide(".exterior-carousel", {
-                type: "slide",
-                perPage: 1,
-                perMove: 1,
-                pagination: false,
-                arrows: true,
-            }).mount();
-            // Add this new code for exterior carousel
-            const prevArrow = exteriorElement.querySelector('.splide__arrow--prev');
-            const nextArrow = exteriorElement.querySelector('.splide__arrow--next');
-            
-            this.sliders.exterior.on('mounted moved', function() {
-                if (this.isBeginning()) {
-                    prevArrow.setAttribute('disabled', 'true');
-                    prevArrow.style.visibility = 'hidden';
-                } else {
-                    prevArrow.removeAttribute('disabled');
-                    prevArrow.style.visibility = 'visible';
-                }
-                
-                if (this.isEnd()) {
-                    nextArrow.setAttribute('disabled', 'true');
-                    nextArrow.style.visibility = 'hidden';
-                } else {
-                    nextArrow.removeAttribute('disabled');
-                    nextArrow.style.visibility = 'visible';
-                }
+        if (exteriorElement && exteriorElement.querySelector('.swiper-wrapper')) {
+            // Destroy existing instance if it exists
+            if (this.sliders.exterior) {
+                this.sliders.exterior.destroy(true, true);
+            }
+
+            this.sliders.exterior = new Swiper(exteriorElement, {
+                init: true,
+                enabled: true,
+                observer: true,
+                observeParents: true,
+                slidesPerView: 1,
+                navigation: {
+                    enabled: true,
+                    nextEl: '.exterior-carousel .swiper-button-next',
+                    prevEl: '.exterior-carousel .swiper-button-prev',
+                },
             });
             exteriorElement.style.display = "block";
         }
-        // 初始化內裝輪播
+
+        // Initialize interior carousel
         const interiorElement = document.querySelector(".interior-carousel");
-        if (interiorElement) {
-            this.sliders.interior = new Splide(".interior-carousel", {
-                type: "slide",
-                perPage: 1,
-                perMove: 1,
-                pagination: false,
-                arrows: true,
-                gap: "1em",
-            }).mount();
-            // Add this new code for interior carousel
-            const prevArrow = interiorElement.querySelector('.splide__arrow--prev');
-            const nextArrow = interiorElement.querySelector('.splide__arrow--next');
-            
-            this.sliders.interior.on('mounted moved', function() {
-                if (this.isBeginning()) {
-                    prevArrow.setAttribute('disabled', 'true');
-                    prevArrow.style.visibility = 'hidden';
-                } else {
-                    prevArrow.removeAttribute('disabled');
-                    prevArrow.style.visibility = 'visible';
-                }
-                
-                if (this.isEnd()) {
-                    nextArrow.setAttribute('disabled', 'true');
-                    nextArrow.style.visibility = 'hidden';
-                } else {
-                    nextArrow.removeAttribute('disabled');
-                    nextArrow.style.visibility = 'visible';
-                }
+        if (interiorElement && interiorElement.querySelector('.swiper-wrapper')) {
+            if (this.sliders.interior) {
+                this.sliders.interior.destroy(true, true);
+            }
+
+            this.sliders.interior = new Swiper(interiorElement, {
+                init: true,
+                enabled: true,
+                observer: true,
+                observeParents: true,
+                slidesPerView: 1,
+                navigation: {
+                    enabled: true,
+                    nextEl: '.interior-carousel .swiper-button-next',
+                    prevEl: '.interior-carousel .swiper-button-prev',
+                },
             });
             interiorElement.style.display = "none";
         }
-        // 設置初始視圖狀態
-        this.state.currentView = "exterior";
     }
 
     initializeEventListeners() {
@@ -182,20 +157,26 @@ class ConfiguratorPage {
     switchView(view) {
         const exteriorElement = document.querySelector(".exterior-carousel");
         const interiorElement = document.querySelector(".interior-carousel");
-        // 更新視圖顯示
+
         if (view === "exterior") {
-            if (exteriorElement) exteriorElement.style.display = "block";
-            if (interiorElement) interiorElement.style.display = "none";
-            if (this.sliders.exterior) this.sliders.exterior.refresh();
+            if (exteriorElement) {
+                exteriorElement.style.display = "block";
+                this.sliders.exterior?.updateSlides();
+            }
+            if (interiorElement) {
+                interiorElement.style.display = "none";
+            }
         } else {
-            if (exteriorElement) exteriorElement.style.display = "none";
-            if (interiorElement) interiorElement.style.display = "block";
-            if (this.sliders.interior) this.sliders.interior.refresh();
+            if (exteriorElement) {
+                exteriorElement.style.display = "none";
+            }
+            if (interiorElement) {
+                interiorElement.style.display = "block";
+                this.sliders.interior?.updateSlides();
+            }
         }
-        // 更新 radio button 狀態
-        const radioInput = document.querySelector(
-            `input[name="view"][value="${view}"]`
-        );
+
+        const radioInput = document.querySelector(`input[name="view"][value="${view}"]`);
         if (radioInput) {
             radioInput.checked = true;
         }
@@ -319,7 +300,7 @@ class ConfiguratorPage {
 
     // 重置為基本圖片的方法
     resetToBaseImages() {
-        const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
+        const exteriorSlideContainer = document.querySelector(".exterior-carousel .swiper-wrapper");
         if (exteriorSlideContainer && this.currentConfig.model?.base_image) {
             exteriorSlideContainer.innerHTML = "";
 
@@ -330,7 +311,7 @@ class ConfiguratorPage {
             baseImages.forEach(image => {
                 if (image?.url) {
                     const slide = document.createElement("div");
-                    slide.className = "splide__slide";
+                    slide.className = "swiper-slide";
                     slide.innerHTML = `
                     <img src="${image.url}" 
                          srcset="${image.url}" 
@@ -342,7 +323,7 @@ class ConfiguratorPage {
             });
 
             if (this.sliders.exterior) {
-                this.sliders.exterior.refresh();
+                this.sliders.exterior.update();
             }
         }
     }
@@ -422,13 +403,13 @@ scrollToCarousel() {
     }
 
     // Update exterior carousel with multiple base images
-    const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
+    const exteriorSlideContainer = document.querySelector(".exterior-carousel .swiper-wrapper");
     if (exteriorSlideContainer && model.base_images && Array.isArray(model.base_images)) {
         exteriorSlideContainer.innerHTML = "";
         model.base_images.forEach(image => {
             if (image?.url) {
                 const slide = document.createElement("div");
-                slide.className = "splide__slide";
+                slide.className = "swiper-slide";
                 slide.innerHTML = `
                     <img src="${image.url}" 
                          srcset="${image.url}" 
@@ -452,7 +433,7 @@ scrollToCarousel() {
 }
     
 updateInteriorImages(trimData) {
-    const interiorSlideContainer = document.querySelector(".interior-carousel .splide__list");
+    const interiorSlideContainer = document.querySelector(".interior-carousel .swiper-wrapper");
     if (!interiorSlideContainer || !trimData.interior_image) return;
 
     interiorSlideContainer.innerHTML = "";
@@ -460,7 +441,7 @@ updateInteriorImages(trimData) {
     trimData.interior_image.forEach(image => {
         if (image?.url) {
             const slide = document.createElement("div");
-            slide.className = "splide__slide";
+            slide.className = "swiper-slide";
             slide.innerHTML = `
                 <img src="${image.url}" 
                      srcset="${image.url}" 
@@ -473,13 +454,16 @@ updateInteriorImages(trimData) {
     // Reinitialize interior slider
     if (this.sliders.interior) {
         this.sliders.interior.destroy();
-        this.sliders.interior = new Splide(".interior-carousel", {
-            type: "slide",
-            perPage: 1,
-            perMove: 1,
-            pagination: false,
-            arrows: true,
-        }).mount();
+        this.sliders.interior = new Swiper(".interior-carousel", {
+            slidesPerView: 1,
+            observer: true,
+            observeParents: true,
+            enabled: true,
+            navigation: {
+                nextEl: '.interior-carousel .swiper-button-next',
+                prevEl: '.interior-carousel .swiper-button-prev',
+            },
+        });
     }
 }
 
@@ -1257,7 +1241,7 @@ async handleTrimChange(trimId) {
         if (this.state.currentView === "exterior") {
             if (exteriorElement) {
                 exteriorElement.style.display = "block";
-                this.sliders.exterior?.refresh();
+                this.sliders.exterior?.update();
             }
             if (interiorElement) {
                 interiorElement.style.display = "none";
@@ -1268,7 +1252,7 @@ async handleTrimChange(trimId) {
             }
             if (interiorElement) {
                 interiorElement.style.display = "block";
-                this.sliders.interior?.refresh();
+                this.sliders.interior?.update();
             }
         }
     }
@@ -1290,14 +1274,14 @@ updateColorDisplay(color) {
     );
 
     if (selectedColorOption?.final_image?.length > 0) {
-        const exteriorSlideContainer = document.querySelector(".exterior-carousel .splide__list");
+        const exteriorSlideContainer = document.querySelector(".exterior-carousel .swiper-wrapper");
         if (exteriorSlideContainer) {
             exteriorSlideContainer.innerHTML = "";
 
             selectedColorOption.final_image.forEach(image => {
                 if (image?.url) {
                     const slide = document.createElement("div");
-                    slide.className = "splide__slide";
+                    slide.className = "swiper-slide";
                     slide.innerHTML = `
                         <img src="${image.url}" 
                              srcset="${image.url}" 
@@ -1310,15 +1294,10 @@ updateColorDisplay(color) {
 
             // Refresh the exterior slider
             if (this.sliders.exterior) {
-                this.sliders.exterior.refresh();
-                setTimeout(() => {
-                    this.scrollToCarousel();
-                }, 100);
+                this.sliders.exterior.update();
             }
         }
     }
-
-    this.refreshSliders();
 }
 }
 
