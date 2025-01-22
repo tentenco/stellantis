@@ -542,38 +542,42 @@ updateInteriorImages(trimData) {
 
     async loadAreaOptions() {
         try {
-            const response = await fetch(`${this.XANO_API_URL}/branddealers`);
-            if (!response.ok) throw new Error("Failed to fetch dealer data");
-            const dealersData = await response.json();
-
             // Get brand ID from the current URL path
             const pathSegments = window.location.pathname.split('/');
-            const brandSlug = pathSegments[1]; // e.g., "peugeot" from "/peugeot/single-config"
+            const brandSlug = pathSegments[1];
+            const currentBrandId = this.getBrandIdFromSlug(brandSlug);
+            
+            console.log("Current Brand ID:", currentBrandId);
 
-            // Filter dealers for current brand's page
-            const currentBrandDealers = dealersData
-                .filter(dealer => {
-                    // Match dealer's brand with current page's brand
-                    return dealer._dealers &&
-                        dealer.brands_id === this.getBrandIdFromSlug(brandSlug);
-                })
-                .sort((a, b) => a.id - b.id);
+            // Fetch dealers with brand filter
+            const response = await fetch(`${this.XANO_API_URL}/dealers?brand_id=${currentBrandId}`);
+            if (!response.ok) throw new Error("Failed to fetch dealer data");
+            const dealersData = await response.json();
+            
+            console.log("Dealers Data:", dealersData);
 
+            // Filter active dealers
+            const currentBrandDealers = dealersData.filter(dealer => dealer.is_active);
+            console.log("Filtered Dealers:", currentBrandDealers);
+
+            // Create area map
             const areaMap = new Map();
             currentBrandDealers.forEach(dealer => {
-                if (dealer._dealers?.area) {
-                    areaMap.set(dealer._dealers.area, true);
+                if (dealer.area) {
+                    areaMap.set(dealer.area, true);
                 }
             });
 
             const uniqueAreas = Array.from(areaMap.keys());
+            console.log("Unique Areas:", uniqueAreas);
+
             const areaSelect = document.getElementById("area");
             if (!areaSelect) return;
 
             areaSelect.innerHTML = `
-              <option value="">請選擇鄰近縣市</option>
-              ${uniqueAreas.map(area => `<option value="${area}">${area}</option>`).join("")}
-          `;
+                <option value="">請選擇鄰近縣市</option>
+                ${uniqueAreas.map(area => `<option value="${area}">${area}</option>`).join("")}
+            `;
 
             this.dealersData = currentBrandDealers;
 
@@ -596,7 +600,7 @@ updateInteriorImages(trimData) {
         }
 
         const dealersInArea = this.dealersData.filter(
-            dealer => dealer._dealers?.area === selectedArea
+            dealer => dealer.area === selectedArea
         );
 
         dealerContainer.style.display = "block";
@@ -604,26 +608,26 @@ updateInteriorImages(trimData) {
             const dealerOption = document.createElement("label");
             dealerOption.className = "form_option_wrap w-radio";
             dealerOption.innerHTML = `
-            <input type="radio" 
-                name="dealer" 
-                id="dealer-${dealer.dealers_id}" 
-                data-name="dealer" 
-                required 
-                class="w-form-formradioinput hide w-radio-input" 
-                value="${dealer._dealers?.name}"
-                data-address="${dealer._dealers?.address || ''}"
-                data-phone="${dealer._dealers?.phone || ''}"
-                ${index === 0 ? "checked" : ""}>
-            <div class="form_radio_card">
-                <div class="radio_mark">
-                    <div class="radio_dot"></div>
+                <input type="radio" 
+                    name="dealer" 
+                    id="dealer-${dealer.id}" 
+                    data-name="dealer" 
+                    required 
+                    class="w-form-formradioinput hide w-radio-input" 
+                    value="${dealer.name}"
+                    data-address="${dealer.address || ''}"
+                    data-phone="${dealer.phone || ''}"
+                    ${index === 0 ? "checked" : ""}>
+                <div class="form_radio_card">
+                    <div class="radio_mark">
+                        <div class="radio_dot"></div>
+                    </div>
+                    <div class="option_content">
+                        <div class="u-weight-bold">${dealer.name || ''}</div>
+                        <div>${dealer.address || ''}</div>
+                    </div>
                 </div>
-                <div class="option_content">
-                    <div class="u-weight-bold">${dealer._dealers?.name || ''}</div>
-                    <div>${dealer._dealers?.address || ''}</div>
-                </div>
-            </div>
-            <span class="hide w-form-label" for="dealer-${dealer.dealers_id}">Radio</span>
+                <span class="hide w-form-label" for="dealer-${dealer.id}">Radio</span>
             `;
 
             dealerContainer.appendChild(dealerOption);
@@ -632,13 +636,13 @@ updateInteriorImages(trimData) {
             if (input) {
                 input.addEventListener("change", () => {
                     if (input.checked) {
-                        this.currentConfig.retail = dealer.dealers_id;
+                        this.currentConfig.retail = dealer.id;
                         const navDealerResult = document.querySelector(".nav_dealer_result");
                         if (navDealerResult) {
                             navDealerResult.style.display = "block";
                             const navDealerName = navDealerResult.querySelector("div:last-child");
                             if (navDealerName) {
-                                navDealerName.textContent = dealer._dealers?.name || '';
+                                navDealerName.textContent = dealer.name || '';
                             }
                         }
                     }
