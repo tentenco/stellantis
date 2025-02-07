@@ -230,22 +230,22 @@ class ConfiguratorPage {
     updateInstallmentOptions() {
         const modelPriceElement = document.getElementById("model-price");
         if (!modelPriceElement) return;
-    
+
         // Get total price from the displayed price
         const totalPrice = parseInt(
             modelPriceElement.textContent.replace(/[^0-9]/g, "")
         );
-    
+
         const installmentPrice = document.getElementById("installment-price");
         if (!installmentPrice) return;
-    
+
         // Calculate down payment options (20% to 50% of total price in 5% increments)
         let options = ['<option value="">請選擇自備款金額</option>'];
         for (let percentage = 20; percentage <= 50; percentage += 5) {
             const downPayment = Math.round(totalPrice * (percentage / 100));
             options.push(`<option value="${downPayment}">${percentage}% - NT$${downPayment.toLocaleString()}</option>`);
         }
-    
+
         installmentPrice.innerHTML = options.join("");
     }
 
@@ -254,14 +254,14 @@ class ConfiguratorPage {
         const installmentMonth = document.getElementById("installment-month");
         const monthlyPaymentElement = document.getElementById("monthly-payment");
         const modelPriceElement = document.getElementById("model-price");
-    
+
         if (!installmentPrice || !installmentMonth || !monthlyPaymentElement || !modelPriceElement) return;
-    
+
         // Get total price and selected values
         const totalPrice = parseInt(modelPriceElement.textContent.replace(/[^0-9]/g, ""));
         const downPayment = parseInt(installmentPrice.value) || 0;
         const selectedMonths = parseInt(installmentMonth.value) || 0;
-    
+
         // Calculate monthly payment only if both values are selected
         if (downPayment > 0 && selectedMonths > 0) {
             const remainingAmount = totalPrice - downPayment;
@@ -328,30 +328,30 @@ class ConfiguratorPage {
         }
     }
     // Add this method to handle scrolling to the carousel
-scrollToCarousel() {
-    // Check if it's mobile view (you can adjust the width as needed)
-    if (window.innerWidth <= 767) {
-        const carousel = document.querySelector('.exterior-carousel');
-        if (carousel) {
-            // Add a small delay to ensure the DOM is updated
-            setTimeout(() => {
-                // Get the navbar height
-                const navbar = document.querySelector('.nav_wrap');
-                const navbarHeight = navbar ? navbar.offsetHeight : 0;
-                
-                // Calculate the scroll position with offset
-                const carouselPosition = carousel.getBoundingClientRect().top + window.pageYOffset;
-                const scrollPosition = carouselPosition - navbarHeight - 20; // 20px extra padding
-                
-                // Smooth scroll to position
-                window.scrollTo({
-                    top: scrollPosition,
-                    behavior: 'smooth'
-                });
-            }, 100);
+    scrollToCarousel() {
+        // Check if it's mobile view (you can adjust the width as needed)
+        if (window.innerWidth <= 767) {
+            const carousel = document.querySelector('.exterior-carousel');
+            if (carousel) {
+                // Add a small delay to ensure the DOM is updated
+                setTimeout(() => {
+                    // Get the navbar height
+                    const navbar = document.querySelector('.nav_wrap');
+                    const navbarHeight = navbar ? navbar.offsetHeight : 0;
+
+                    // Calculate the scroll position with offset
+                    const carouselPosition = carousel.getBoundingClientRect().top + window.pageYOffset;
+                    const scrollPosition = carouselPosition - navbarHeight - 20; // 20px extra padding
+
+                    // Smooth scroll to position
+                    window.scrollTo({
+                        top: scrollPosition,
+                        behavior: 'smooth'
+                    });
+                }, 100);
+            }
         }
     }
-  }
 
     async fetchModelBySlug(slug) {
         try {
@@ -391,81 +391,81 @@ scrollToCarousel() {
 
     // Modify updateModelInfo method
     updateModelInfo(model) {
-    if (!model) {
-        console.error("Model data is missing or invalid");
-        return;
-    }
+        if (!model) {
+            console.error("Model data is missing or invalid");
+            return;
+        }
 
-    // Update model name
-    const modelName = document.getElementById("model-name");
-    if (modelName) {
-        modelName.textContent = model.name || "Unknown Model";
-    }
+        // Update model name
+        const modelName = document.getElementById("model-name");
+        if (modelName) {
+            modelName.textContent = model.name || "Unknown Model";
+        }
 
-    // Update exterior carousel with multiple base images
-    const exteriorSlideContainer = document.querySelector(".exterior-carousel .swiper-wrapper");
-    if (exteriorSlideContainer && model.base_images && Array.isArray(model.base_images)) {
-        exteriorSlideContainer.innerHTML = "";
-        model.base_images.forEach(image => {
-            if (image?.url) {
-                const slide = document.createElement("div");
-                slide.className = "swiper-slide";
-                slide.innerHTML = `
+        // Update exterior carousel with multiple base images
+        const exteriorSlideContainer = document.querySelector(".exterior-carousel .swiper-wrapper");
+        if (exteriorSlideContainer && model.base_images && Array.isArray(model.base_images)) {
+            exteriorSlideContainer.innerHTML = "";
+            model.base_images.forEach(image => {
+                if (image?.url) {
+                    const slide = document.createElement("div");
+                    slide.className = "swiper-slide";
+                    slide.innerHTML = `
                     <img src="${image.url}" 
                          srcset="${image.url}" 
                          alt="${model.name || 'Model Image'}"
                          class="model-image">
                 `;
-                exteriorSlideContainer.appendChild(slide);
-            }
-        });
+                    exteriorSlideContainer.appendChild(slide);
+                }
+            });
+        }
+
+        // Update model price
+        const modelPrice = document.getElementById("model-price");
+        if (modelPrice) {
+            const formattedPrice = new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency: "TWD",
+            }).format(model.price || 0);
+            modelPrice.textContent = formattedPrice;
+        }
     }
 
-    // Update model price
-    const modelPrice = document.getElementById("model-price");
-    if (modelPrice) {
-        const formattedPrice = new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "TWD",
-        }).format(model.price || 0);
-        modelPrice.textContent = formattedPrice;
-    }
-}
-    
-updateInteriorImages(trimData) {
-    const interiorSlideContainer = document.querySelector(".interior-carousel .swiper-wrapper");
-    if (!interiorSlideContainer || !trimData.interior_image) return;
+    updateInteriorImages(trimData) {
+        const interiorSlideContainer = document.querySelector(".interior-carousel .swiper-wrapper");
+        if (!interiorSlideContainer || !trimData.interior_image) return;
 
-    interiorSlideContainer.innerHTML = "";
-    
-    trimData.interior_image.forEach(image => {
-        if (image?.url) {
-            const slide = document.createElement("div");
-            slide.className = "swiper-slide";
-            slide.innerHTML = `
+        interiorSlideContainer.innerHTML = "";
+
+        trimData.interior_image.forEach(image => {
+            if (image?.url) {
+                const slide = document.createElement("div");
+                slide.className = "swiper-slide";
+                slide.innerHTML = `
                 <img src="${image.url}" 
                      srcset="${image.url}" 
                      alt="${this.currentConfig.model?.name || ''} Interior">
             `;
-            interiorSlideContainer.appendChild(slide);
-        }
-    });
-
-    // Reinitialize interior slider
-    if (this.sliders.interior) {
-        this.sliders.interior.destroy();
-        this.sliders.interior = new Swiper(".interior-carousel", {
-            slidesPerView: 1,
-            observer: true,
-            observeParents: true,
-            enabled: true,
-            navigation: {
-                nextEl: '.interior-carousel .swiper-button-next',
-                prevEl: '.interior-carousel .swiper-button-prev',
-            },
+                interiorSlideContainer.appendChild(slide);
+            }
         });
+
+        // Reinitialize interior slider
+        if (this.sliders.interior) {
+            this.sliders.interior.destroy();
+            this.sliders.interior = new Swiper(".interior-carousel", {
+                slidesPerView: 1,
+                observer: true,
+                observeParents: true,
+                enabled: true,
+                navigation: {
+                    nextEl: '.interior-carousel .swiper-button-next',
+                    prevEl: '.interior-carousel .swiper-button-prev',
+                },
+            });
+        }
     }
-}
 
     updatePriceDisplays() {
         const basePrice = this.currentConfig.model?.price || 0;
@@ -546,14 +546,14 @@ updateInteriorImages(trimData) {
             const pathSegments = window.location.pathname.split('/');
             const brandSlug = pathSegments[1];
             const currentBrandId = this.getBrandIdFromSlug(brandSlug);
-            
+
             console.log("Current Brand ID:", currentBrandId);
 
             // Fetch dealers with brand filter
             const response = await fetch(`${this.XANO_API_URL}/dealers?brand_id=${currentBrandId}`);
             if (!response.ok) throw new Error("Failed to fetch dealer data");
             const dealersData = await response.json();
-            
+
             console.log("Dealers Data:", dealersData);
 
             // Filter active dealers
@@ -718,13 +718,13 @@ updateInteriorImages(trimData) {
 
             accessoryRow.innerHTML = `
                 <div>${accessory
-                        .closest(".form_option_wrap")
-                        .querySelector(".u-weight-bold").textContent
-                    }</div>
+                    .closest(".form_option_wrap")
+                    .querySelector(".u-weight-bold").textContent
+                }</div>
                 <div>${priceAdjustment > 0
-                        ? `+NT$${priceAdjustment.toLocaleString()}`
-                        : "包含"
-                    }</div>
+                    ? `+NT$${priceAdjustment.toLocaleString()}`
+                    : "包含"
+                }</div>
             `;
 
             const specLink = summaryGroup
@@ -742,28 +742,33 @@ updateInteriorImages(trimData) {
             existingSpecLink.remove();
         }
 
-        if (selectedTrim) {
-            const trimData = this.configurationData.find(config =>
-                config._trims.some(trim =>
-                    trim.id === parseInt(selectedTrim.id.replace('trim-', ''))
-                )
-            )?._trims[0];
+        // Find the configuration details based on selected engine and trim
+        const currentConfig = this.configurationData.find(config =>
+            config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+            config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
+        );
 
-            if (trimData?.pdf?.url) {
-                const specLinkRow = document.createElement("div");
-                specLinkRow.className = "summary_row";
-                specLinkRow.innerHTML = `
-                    <a href="${trimData.pdf.url}" 
-                    target="_blank" 
-                    class="text_link_secondary w-inline-block"
-                    id="summary-spec-link">
-                        <div>檢視詳細規格表ⓘ</div>
-                    </a>
-                `;
-                summaryGroup.appendChild(specLinkRow);
-            }
+        // Get the brand slug from the URL
+        const pathSegments = window.location.pathname.split('/');
+        const brandSlug = pathSegments[1]; // Assuming the brand slug is the first segment
+
+        // Construct the spec link if trimData and brandSlug are available
+        if (currentConfig && brandSlug) {
+            const specLinkRow = document.createElement("div");
+            specLinkRow.className = "summary_row";
+            // Create the dynamic URL
+            const specLinkURL = `/${brandSlug}/spec?id=${currentConfig.id}`;
+
+            specLinkRow.innerHTML = `
+        <a href="${specLinkURL}" 
+            target="_blank" 
+            class="text_link_secondary w-inline-block"
+            id="summary-spec-link">
+            <div>檢視詳細規格表ⓘ</div>
+        </a>
+    `;
+            summaryGroup.appendChild(specLinkRow);
         }
-
     }
 
     async updateEngineOptions() {
@@ -812,17 +817,17 @@ updateInteriorImages(trimData) {
                                 <div class="option_content">
                                     <div class="option_title_row">
                                         <div class="u-weight-bold">${engine.name
-                        }</div>
+                    }</div>
                                         <div>${engine.price_adjustment > 0
-                            ? `+NT$${engine.price_adjustment}`
-                            : "+NT$0"
-                        }</div>
+                        ? `+NT$${engine.price_adjustment}`
+                        : "+NT$0"
+                    }</div>
                                     </div>
                                     <span>${engine.power}</span>
                                 </div>
                             </div>
                             <span class="hide w-form-label" for="engine-${engine.id
-                        }">Engine${index + 1}</span>
+                    }">Engine${index + 1}</span>
                         `;
 
                 engineContainer.appendChild(engineOption);
@@ -884,37 +889,37 @@ updateInteriorImages(trimData) {
         }
     }
 
-renderTrimOptions(trims) {
-    console.log("Rendering trim options:", trims);
+    renderTrimOptions(trims) {
+        console.log("Rendering trim options:", trims);
 
-    const summaryTrimPrice = document.getElementById("summary-trim-price");
-    const trimContainer = document.querySelector(
-        ".trim-selection .radio-group"
-    );
-
-    if (!trimContainer) {
-        console.error("Trim container not found");
-        return;
-    }
-
-    trimContainer.innerHTML = "";
-
-    // Find the configuration data for each trim
-    trims.forEach((trim, index) => {
-        // Find the matching configuration for this trim
-        const trimConfig = this.configurationData.find((config) =>
-            config._trims.some((t) => t.id === trim.id)
+        const summaryTrimPrice = document.getElementById("summary-trim-price");
+        const trimContainer = document.querySelector(
+            ".trim-selection .radio-group"
         );
 
-        const trimPrice = trimConfig ? trimConfig.trim_price : 0;
-        // 格式化價格，加入千分位
-        const formattedPrice = trimPrice > 0 ? 
-            `+NT$${trimPrice.toLocaleString('en-US')}` : 
-            "+NT$0";
+        if (!trimContainer) {
+            console.error("Trim container not found");
+            return;
+        }
 
-        const trimOption = document.createElement("label");
-        trimOption.className = "form_option_wrap w-radio";
-        trimOption.innerHTML = `
+        trimContainer.innerHTML = "";
+
+        // Find the configuration data for each trim
+        trims.forEach((trim, index) => {
+            // Find the matching configuration for this trim
+            const trimConfig = this.configurationData.find((config) =>
+                config._trims.some((t) => t.id === trim.id)
+            );
+
+            const trimPrice = trimConfig ? trimConfig.trim_price : 0;
+            // 格式化價格，加入千分位
+            const formattedPrice = trimPrice > 0 ?
+                `+NT$${trimPrice.toLocaleString('en-US')}` :
+                "+NT$0";
+
+            const trimOption = document.createElement("label");
+            trimOption.className = "form_option_wrap w-radio";
+            trimOption.innerHTML = `
             <input type="radio" 
                 name="trim" 
                 id="trim-${trim.id}" 
@@ -945,37 +950,37 @@ renderTrimOptions(trims) {
             <span class="hide w-form-label" for="trim-${trim.id}">Trim${index + 1}</span>
         `;
 
-        trimContainer.appendChild(trimOption);
+            trimContainer.appendChild(trimOption);
 
-        const input = trimOption.querySelector("input");
-        input.addEventListener("change", () => {
-            if (input.checked) {
-                this.currentConfig.trim = trim.id;
-                if (summaryTrimPrice) {
-                    const modelPrice = this.currentConfig.model?.price || 0;
-                    const trimPrice = trim.price_adjustment || 0;
-                    const totalPrice = modelPrice + trimPrice;
-                    // 格式化總價，加入千分位
-                    summaryTrimPrice.textContent = `NT$${totalPrice.toLocaleString('en-US')}`;
+            const input = trimOption.querySelector("input");
+            input.addEventListener("change", () => {
+                if (input.checked) {
+                    this.currentConfig.trim = trim.id;
+                    if (summaryTrimPrice) {
+                        const modelPrice = this.currentConfig.model?.price || 0;
+                        const trimPrice = trim.price_adjustment || 0;
+                        const totalPrice = modelPrice + trimPrice;
+                        // 格式化總價，加入千分位
+                        summaryTrimPrice.textContent = `NT$${totalPrice.toLocaleString('en-US')}`;
+                    }
+                    this.updatePriceDisplays();
+                    this.handleTrimChange(trim.id);
+                    this.updateSummary();
                 }
-                this.updatePriceDisplays();
-                this.handleTrimChange(trim.id);
-                this.updateSummary();
+            });
+
+            if (index === 0) {
+                input.dispatchEvent(new Event("change"));
             }
         });
-
-        if (index === 0) {
-            input.dispatchEvent(new Event("change"));
-        }
-    });
-}
+    }
 
     async getColorsForTrim(engineId, trimId) {
         try {
             const relevantConfig = this.configurationData.find(
                 (config) =>
-                config._engines.some((engine) => engine.id === parseInt(engineId)) &&
-                config._trims.some((trim) => trim.id === parseInt(trimId))
+                    config._engines.some((engine) => engine.id === parseInt(engineId)) &&
+                    config._trims.some((trim) => trim.id === parseInt(trimId))
             );
 
             if (!relevantConfig?.color_options) {
@@ -991,45 +996,45 @@ renderTrimOptions(trims) {
         }
     }
 
-async handleTrimChange(trimId) {
-    this.currentConfig.trim = trimId;
-    
-    // Find the current configuration and trim data
-    const currentConfig = this.configurationData.find(
-        config => config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
-                 config._trims.some(trim => trim.id === parseInt(trimId))
-    );
-    
-    const trimData = currentConfig?._trims?.find(trim => trim.id === parseInt(trimId));
-    
-    if (trimData) {
-        // Update interior images for the selected trim
-        this.updateInteriorImages(trimData);
-    }
+    async handleTrimChange(trimId) {
+        this.currentConfig.trim = trimId;
 
-    const availableColors = await this.getColorsForTrim(
-        this.currentConfig.engine,
-        trimId
-    );
-    
-    this.resetColorDisplay();
-    this.renderColorOptions(availableColors);
-    this.renderAccessoryOptions();
-    this.renderSpecifications();
-    this.updateSummary();
-}
+        // Find the current configuration and trim data
+        const currentConfig = this.configurationData.find(
+            config => config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+                config._trims.some(trim => trim.id === parseInt(trimId))
+        );
+
+        const trimData = currentConfig?._trims?.find(trim => trim.id === parseInt(trimId));
+
+        if (trimData) {
+            // Update interior images for the selected trim
+            this.updateInteriorImages(trimData);
+        }
+
+        const availableColors = await this.getColorsForTrim(
+            this.currentConfig.engine,
+            trimId
+        );
+
+        this.resetColorDisplay();
+        this.renderColorOptions(availableColors);
+        this.renderAccessoryOptions();
+        this.renderSpecifications();
+        this.updateSummary();
+    }
 
     // Handle accessory updates
     renderAccessoryOptions() {
         const accessories =
             this.configurationData.find(
                 (config) =>
-                config._engines.some(
-                    (engine) => engine.id === parseInt(this.currentConfig.engine)
-                ) &&
-                config._trims.some(
-                    (trim) => trim.id === parseInt(this.currentConfig.trim)
-                )
+                    config._engines.some(
+                        (engine) => engine.id === parseInt(this.currentConfig.engine)
+                    ) &&
+                    config._trims.some(
+                        (trim) => trim.id === parseInt(this.currentConfig.trim)
+                    )
             )?.accessories_id?.[0] || [];
 
         const additionalContainer = document.querySelector(
@@ -1073,7 +1078,7 @@ async handleTrimChange(trimId) {
                     </div>
                 </div>
                 <span class="hide w-form-label" for="additional-${accessory.id
-                    }">Checkbox</span>
+                }">Checkbox</span>
             `;
 
             additionalContainer.appendChild(accessoryOption);
@@ -1115,9 +1120,9 @@ async handleTrimChange(trimId) {
             .sort((a, b) => (a.price_adjustment || 0) - (b.price_adjustment || 0));
 
         activeColors.forEach((color, index) => {
-                const colorOption = document.createElement("div");
-                colorOption.className = "color-swatch";
-                colorOption.innerHTML = `
+            const colorOption = document.createElement("div");
+            colorOption.className = "color-swatch";
+            colorOption.innerHTML = `
             <input type="radio" 
                 name="color" 
                 id="color-${index}" 
@@ -1134,7 +1139,7 @@ async handleTrimChange(trimId) {
             colorContainer.appendChild(colorOption);
 
             const input = colorOption.querySelector("input");
-            
+
             input.addEventListener("change", () => {
                 if (input.checked) {
                     this.switchView("exterior");
@@ -1163,7 +1168,7 @@ async handleTrimChange(trimId) {
             if (firstColorInput) {
                 firstColorInput.checked = true;
                 firstColorInput.dispatchEvent(new Event('change'));
-            } 
+            }
         });
     }
 
@@ -1210,13 +1215,13 @@ async handleTrimChange(trimId) {
                     <table style="width: 100%;">
                         <tbody>
                             ${category.specs.map(spec =>
-                    spec.label && spec.content ? `
+                spec.label && spec.content ? `
                                     <tr>
                                         <td style="width: 50%">${spec.label}</td>
                                         <td style="width: 50%">${spec.content}</td>
                                     </tr>
                                 ` : ''
-                ).join('')}
+            ).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -1262,47 +1267,47 @@ async handleTrimChange(trimId) {
     }
 
     // Update updateColorDisplay method to use color_options
-updateColorDisplay(color) {
-    const currentConfig = this.configurationData.find(config =>
-        config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
-        config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
-    );
+    updateColorDisplay(color) {
+        const currentConfig = this.configurationData.find(config =>
+            config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+            config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
+        );
 
-    if (!currentConfig?.color_options) {
-        console.error("No color options found");
-        return;
-    }
+        if (!currentConfig?.color_options) {
+            console.error("No color options found");
+            return;
+        }
 
-    const selectedColorOption = currentConfig.color_options.find(opt =>
-        opt.color_name === color.color_name
-    );
+        const selectedColorOption = currentConfig.color_options.find(opt =>
+            opt.color_name === color.color_name
+        );
 
-    if (selectedColorOption?.final_image?.length > 0) {
-        const exteriorSlideContainer = document.querySelector(".exterior-carousel .swiper-wrapper");
-        if (exteriorSlideContainer) {
-            exteriorSlideContainer.innerHTML = "";
+        if (selectedColorOption?.final_image?.length > 0) {
+            const exteriorSlideContainer = document.querySelector(".exterior-carousel .swiper-wrapper");
+            if (exteriorSlideContainer) {
+                exteriorSlideContainer.innerHTML = "";
 
-            selectedColorOption.final_image.forEach(image => {
-                if (image?.url) {
-                    const slide = document.createElement("div");
-                    slide.className = "swiper-slide";
-                    slide.innerHTML = `
+                selectedColorOption.final_image.forEach(image => {
+                    if (image?.url) {
+                        const slide = document.createElement("div");
+                        slide.className = "swiper-slide";
+                        slide.innerHTML = `
                         <img src="${image.url}" 
                              srcset="${image.url}" 
                              alt="${this.currentConfig.model.name} - ${color.color_name} Exterior"
                              class="model-image">
                     `;
-                    exteriorSlideContainer.appendChild(slide);
-                }
-            });
+                        exteriorSlideContainer.appendChild(slide);
+                    }
+                });
 
-            // Refresh the exterior slider
-            if (this.sliders.exterior) {
-                this.sliders.exterior.update();
+                // Refresh the exterior slider
+                if (this.sliders.exterior) {
+                    this.sliders.exterior.update();
+                }
             }
         }
     }
-}
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1310,7 +1315,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const submitButton = document.querySelector('input[type="submit"][data-form="submit-btn"]');
     if (submitButton) {
-        submitButton.addEventListener("click", function(e) {
+        submitButton.addEventListener("click", function (e) {
             e.preventDefault();
             const form = submitButton.closest("form");
             const formData = new FormData(form);
@@ -1338,7 +1343,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             localStorage.setItem("formData", JSON.stringify(data));
-            
+
             // 從當前 URL 路徑中獲取 brand name
             const pathSegments = window.location.pathname.split('/');
             const brandName = pathSegments[1]; // 獲取第一個路徑段落作為 brand name
