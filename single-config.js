@@ -760,14 +760,16 @@ class ConfiguratorPage {
             const specLinkURL = `/${brandSlug}/spec?id=${currentConfig.id}`;
 
             specLinkRow.innerHTML = `
-        <a href="${specLinkURL}" 
-            target="_blank" 
-            class="text_link_secondary w-inline-block"
-            id="summary-spec-link">
-            <div>檢視詳細規格表ⓘ</div>
-        </a>
-    `;
+                <a href="${specLinkURL}" 
+                    target="_blank" 
+                    class="text_link_secondary w-inline-block"
+                    id="summary-spec-link">
+                    <div>檢視詳細規格表ⓘ</div>
+                </a>
+            `;
             summaryGroup.appendChild(specLinkRow);
+
+            // Store the specLinkURL in currentConfig
             this.currentConfig.specLinkURL = specLinkURL;
         }
     }
@@ -1316,7 +1318,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const submitButton = document.querySelector('input[type="submit"][data-form="submit-btn"]');
     if (submitButton) {
-        submitButton.addEventListener("click", function (e) {
+        submitButton.addEventListener("click", function(e) {
             e.preventDefault();
             const form = submitButton.closest("form");
             const formData = new FormData(form);
@@ -1342,6 +1344,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (configuratorInstance?.currentConfig?.model) {
                 data.model = configuratorInstance.currentConfig.model.name;
             }
+
+            // Access the specLinkURL from currentConfig
             if (configuratorInstance?.currentConfig?.specLinkURL) {
                 data.specLinkURL = configuratorInstance.currentConfig.specLinkURL;
             }
