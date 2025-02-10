@@ -649,6 +649,11 @@ class ConfiguratorPage {
                 });
             }
         });
+        // After creating the dealer options, trigger the change event on the first dealer to display it by default
+        const firstDealerInput = dealerContainer.querySelector('input[name="dealer"]');
+        if (firstDealerInput) {
+            firstDealerInput.dispatchEvent(new Event('change'));
+        }
     }
 
     // Add this method to the ConfiguratorPage class
