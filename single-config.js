@@ -768,6 +768,7 @@ class ConfiguratorPage {
         </a>
     `;
             summaryGroup.appendChild(specLinkRow);
+            this.currentConfig.specLinkURL = specLinkURL;
         }
     }
 
@@ -1340,6 +1341,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const configuratorInstance = window.configuratorInstance;
             if (configuratorInstance?.currentConfig?.model) {
                 data.model = configuratorInstance.currentConfig.model.name;
+            }
+            if (configuratorInstance?.currentConfig?.specLinkURL) {
+                data.specLinkURL = configuratorInstance.currentConfig.specLinkURL;
             }
 
             localStorage.setItem("formData", JSON.stringify(data));
