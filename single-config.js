@@ -5,6 +5,7 @@ class ConfiguratorPage {
             model: null,
             engine: null,
             trim: null,
+            year: null,
             color: null,
             retail: null,
         };
@@ -191,7 +192,7 @@ class ConfiguratorPage {
         paymentContents[1].style.display = "none";
 
         paymentInputs.forEach((input) => {
-            input.addEventListener("change", function() {
+            input.addEventListener("change", function () {
                 paymentContents.forEach((content) => (content.style.display = "none"));
                 const selectedContent = document.querySelector(
                     `.payment_content.${this.value}`
@@ -1008,9 +1009,9 @@ class ConfiguratorPage {
         this.currentConfig.trim = trimId;
 
         // Find the current configuration and trim data
-        const currentConfig = this.configurationData.find(
-            config => config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
-                config._trims.some(trim => trim.id === parseInt(trimId))
+        const currentConfig = this.configurationData.find(config =>
+            config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+            config._trims.some(trim => trim.id === parseInt(trimId))
         );
 
         const trimData = currentConfig?._trims?.find(trim => trim.id === parseInt(trimId));
@@ -1019,6 +1020,12 @@ class ConfiguratorPage {
             // Update interior images for the selected trim
             this.updateInteriorImages(trimData);
         }
+
+        // Reset year selection
+        this.currentConfig.year = null;
+
+        // Update year options based on the selected model, engine, and trim
+        await this.updateYearOptions();
 
         const availableColors = await this.getColorsForTrim(
             this.currentConfig.engine,
@@ -1030,6 +1037,93 @@ class ConfiguratorPage {
         this.renderAccessoryOptions();
         this.renderSpecifications();
         this.updateSummary();
+    }
+
+
+    async updateYearOptions() {
+        try {
+            if (!this.currentConfig.model || !this.currentConfig.engine || !this.currentConfig.trim || !this.configurationData) {
+                throw new Error("Model, engine, or trim information is missing");
+            }
+
+            // Filter configurations based on selected model, engine, and trim
+            const relevantConfigs = this.configurationData.filter(config =>
+                config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+                config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
+            );
+
+            // Extract unique years from filtered configurations
+            const uniqueYears = new Set();
+            relevantConfigs.forEach(config => {
+                if (config.year) {
+                    uniqueYears.add(config.year);
+                }
+            });
+
+            const yearArray = Array.from(uniqueYears);
+
+            // Sort years in descending order (newest first)
+            yearArray.sort((a, b) => b.localeCompare(a));
+
+            const yearContainer = document.querySelector(
+                ".year-selection .radio-group"
+            );
+            if (!yearContainer) return;
+
+            yearContainer.innerHTML = "";
+
+            yearArray.forEach((year, index) => {
+                const yearOption = document.createElement("label");
+                yearOption.className = "form_option_wrap w-radio";
+                yearOption.innerHTML = `
+                <input type="radio" 
+                    name="year" 
+                    id="year-${year}" 
+                    data-name="year" 
+                    required 
+                    class="w-form-formradioinput hide w-radio-input" 
+                    value="${year}"
+                    ${index === 0 ? "checked" : ""}>
+                <div class="form_radio_card">
+                    <div class="radio_mark">
+                        <div class="radio_dot"></div>
+                    </div>
+                    <div class="option_content">
+                        <div class="option_title_row">
+                            <div class="u-weight-bold">${year}年式</div>
+                        </div>
+                    </div>
+                </div>
+                <span class="hide w-form-label" for="year-${year}">Year ${year}</span>
+            `;
+
+                yearContainer.appendChild(yearOption);
+
+                const input = yearOption.querySelector("input");
+                if (input) {
+                    input.addEventListener("change", () => {
+                        if (input.checked) {
+                            this.currentConfig.year = year;
+                            this.updateSummary();
+                            this.updateColorDisplay();
+                        }
+                    });
+
+                    if (index === 0) {
+                        input.dispatchEvent(new Event("change"));
+                    }
+                }
+            });
+
+            // Show the year selection section if there are options
+            const yearSelection = document.querySelector(".year-selection");
+            if (yearSelection) {
+                yearSelection.style.display = yearArray.length > 0 ? "block" : "none";
+            }
+
+        } catch (error) {
+            console.error("Error updating model year options:", error);
+        }
     }
 
     // Handle accessory updates
@@ -1323,7 +1417,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const submitButton = document.querySelector('input[type="submit"][data-form="submit-btn"]');
     if (submitButton) {
-        submitButton.addEventListener("click", function(e) {
+        submitButton.addEventListener("click", function (e) {
             e.preventDefault();
             const form = submitButton.closest("form");
             const formData = new FormData(form);
@@ -1332,11 +1426,14 @@ document.addEventListener("DOMContentLoaded", () => {
             data.area = formData.get("area");
             data.engine = formData.get("engine");
             data.trim = formData.get("trim");
+            data.year = formData.get("year");  // Add this line
             data.color = formData.get("color");
             data.additional = formData.getAll("additional");
             data.payment = formData.get("payment");
             data.installmentPrice = formData.get("installment-price");
             data.installmentMonth = formData.get("installment-month");
+
+            // Rest of the handler remains the same
 
             const selectedDealer = document.querySelector('input[name="dealer"]:checked');
             if (selectedDealer) {
@@ -1350,18 +1447,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 data.model = configuratorInstance.currentConfig.model.name;
             }
 
-            // Access the specLinkURL from currentConfig
             if (configuratorInstance?.currentConfig?.specLinkURL) {
                 data.specLinkURL = configuratorInstance.currentConfig.specLinkURL;
             }
 
             localStorage.setItem("formData", JSON.stringify(data));
 
-            // 從當前 URL 路徑中獲取 brand name
             const pathSegments = window.location.pathname.split('/');
-            const brandName = pathSegments[1]; // 獲取第一個路徑段落作為 brand name
+            const brandName = pathSegments[1];
 
-            // 使用動態的 brand name 構建 checkout URL
             window.location.href = `/${brandName}/checkout`;
         });
     }
