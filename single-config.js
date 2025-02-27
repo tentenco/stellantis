@@ -694,6 +694,15 @@ class ConfiguratorPage {
             summaryTrimPrice.textContent = `NT$${totalPrice.toLocaleString()}`;
         }
 
+        // Update year summary
+        const selectedYear = document.querySelector('input[name="year"]:checked');
+        const summaryYear = document.getElementById("summary-year");
+        
+        if (selectedYear && summaryYear) {
+            summaryYear.textContent = `${selectedYear.value}年式`;
+        }
+
+        // Update color summary
         const selectedColor = document.querySelector('input[name="color"]:checked');
         const summaryColor = document.getElementById("summary-color");
         const summaryColorPrice = document.getElementById("summary-color-price");
@@ -707,6 +716,7 @@ class ConfiguratorPage {
                 colorPrice > 0 ? `+NT$${colorPrice.toLocaleString()}` : "包含";
         }
 
+        // Update accessories summary
         const selectedAccessories = document.querySelectorAll(
             'input[name="additional"]:checked'
         );
