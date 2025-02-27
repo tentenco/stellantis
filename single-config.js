@@ -753,28 +753,30 @@ class ConfiguratorPage {
             }
         });
 
+        // Find the configuration details based on selected engine and trim and year
+        const currentConfig = this.configurationData.find(config =>
+            config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+            config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim)) &&
+            config.year === this.currentConfig.year 
+        );
+    
+        // Get the brand slug from the URL
+        const pathSegments = window.location.pathname.split('/');
+        const brandSlug = pathSegments[1];
+    
+        // Remove existing spec link
         const existingSpecLink = document.getElementById("summary-spec-link")?.closest(".summary_row");
         if (existingSpecLink) {
             existingSpecLink.remove();
         }
-
-        // Find the configuration details based on selected engine and trim
-        const currentConfig = this.configurationData.find(config =>
-            config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
-            config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
-        );
-
-        // Get the brand slug from the URL
-        const pathSegments = window.location.pathname.split('/');
-        const brandSlug = pathSegments[1]; // Assuming the brand slug is the first segment
-
-        // Construct the spec link if trimData and brandSlug are available
+    
+        // Construct the spec link if currentConfig and brandSlug are available
         if (currentConfig && brandSlug) {
             const specLinkRow = document.createElement("div");
             specLinkRow.className = "summary_row";
             // Create the dynamic URL
             const specLinkURL = `/${brandSlug}/spec?id=${currentConfig.id}`;
-
+    
             specLinkRow.innerHTML = `
                 <a href="${specLinkURL}" 
                     target="_blank" 
@@ -784,7 +786,7 @@ class ConfiguratorPage {
                 </a>
             `;
             summaryGroup.appendChild(specLinkRow);
-
+    
             // Store the specLinkURL in currentConfig
             this.currentConfig.specLinkURL = specLinkURL;
         }
@@ -1017,51 +1019,49 @@ class ConfiguratorPage {
 
     async handleTrimChange(trimId) {
         this.currentConfig.trim = trimId;
-
+    
         // Find the current configuration and trim data
         const currentConfig = this.configurationData.find(config =>
             config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
             config._trims.some(trim => trim.id === parseInt(trimId))
         );
-
+    
         const trimData = currentConfig?._trims?.find(trim => trim.id === parseInt(trimId));
-
+    
         if (trimData) {
             // Update interior images for the selected trim
             this.updateInteriorImages(trimData);
         }
-
-        // Reset year selection
+    
+        // Reset year and color selection
         this.currentConfig.year = null;
-
+        this.currentConfig.color = null;
+        
+        // Reset color display
+        this.resetColorDisplay();
+        
         // Update year options based on the selected model, engine, and trim
         await this.updateYearOptions();
-
-        const availableColors = await this.getColorsForTrim(
-            this.currentConfig.engine,
-            trimId
-        );
-
-        this.resetColorDisplay();
-        this.renderColorOptions(availableColors);
+        
+        // Don't call renderColorOptions here since it will be called after year selection
+        
         this.renderAccessoryOptions();
         this.renderSpecifications();
         this.updateSummary();
-    }
-
+    }    
 
     async updateYearOptions() {
         try {
             if (!this.currentConfig.model || !this.currentConfig.engine || !this.currentConfig.trim || !this.configurationData) {
                 throw new Error("Model, engine, or trim information is missing");
             }
-
+    
             // Filter configurations based on selected model, engine, and trim
-            const relevantConfigs = this.configurationData.filter(config =>
+            const relevantConfigs = this.configurationData.filter(config => 
                 config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
                 config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
             );
-
+    
             // Extract unique years from filtered configurations
             const uniqueYears = new Set();
             relevantConfigs.forEach(config => {
@@ -1069,85 +1069,121 @@ class ConfiguratorPage {
                     uniqueYears.add(config.year);
                 }
             });
-
+    
             const yearArray = Array.from(uniqueYears);
-
+            
             // Sort years in descending order (newest first)
             yearArray.sort((a, b) => b.localeCompare(a));
-
+    
             const yearContainer = document.querySelector(
                 ".year-selection .radio-group"
             );
             if (!yearContainer) return;
-
+    
             yearContainer.innerHTML = "";
-
+    
             yearArray.forEach((year, index) => {
                 const yearOption = document.createElement("label");
                 yearOption.className = "form_option_wrap w-radio";
                 yearOption.innerHTML = `
-                <input type="radio" 
-                    name="year" 
-                    id="year-${year}" 
-                    data-name="year" 
-                    required 
-                    class="w-form-formradioinput hide w-radio-input" 
-                    value="${year}"
-                    ${index === 0 ? "checked" : ""}>
-                <div class="form_radio_card">
-                    <div class="radio_mark">
-                        <div class="radio_dot"></div>
-                    </div>
-                    <div class="option_content">
-                        <div class="option_title_row">
-                            <div class="u-weight-bold">${year}年式</div>
+                    <input type="radio" 
+                        name="year" 
+                        id="year-${year}" 
+                        data-name="year" 
+                        required 
+                        class="w-form-formradioinput hide w-radio-input" 
+                        value="${year}"
+                        ${index === 0 ? "checked" : ""}>
+                    <div class="form_radio_card">
+                        <div class="radio_mark">
+                            <div class="radio_dot"></div>
+                        </div>
+                        <div class="option_content">
+                            <div class="option_title_row">
+                                <div class="u-weight-bold">${year}年式</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <span class="hide w-form-label" for="year-${year}">Year ${year}</span>
-            `;
-
+                    <span class="hide w-form-label" for="year-${year}">Year ${year}</span>
+                `;
+    
                 yearContainer.appendChild(yearOption);
-
+    
                 const input = yearOption.querySelector("input");
                 if (input) {
                     input.addEventListener("change", () => {
                         if (input.checked) {
                             this.currentConfig.year = year;
+                            this.updateColorOptionsForYear(year);
                             this.updateSummary();
-                            this.updateColorDisplay();
                         }
                     });
-
+    
                     if (index === 0) {
                         input.dispatchEvent(new Event("change"));
                     }
                 }
             });
-
+            
             // Show the year selection section if there are options
             const yearSelection = document.querySelector(".year-selection");
             if (yearSelection) {
                 yearSelection.style.display = yearArray.length > 0 ? "block" : "none";
             }
-
+            
         } catch (error) {
             console.error("Error updating model year options:", error);
         }
     }
+    
+    async updateColorOptionsForYear(year) {
+        try {
+            if (!this.currentConfig.engine || !this.currentConfig.trim || !year) {
+                throw new Error("Engine, trim, or year information is missing");
+            }
+    
+            // Find the specific configuration that matches the selected engine, trim, and year
+            const specificConfig = this.configurationData.find(config => 
+                config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+                config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim)) &&
+                config.year === year
+            );
+    
+            if (!specificConfig?.color_options) {
+                console.warn("No color options found for this configuration and year");
+                return;
+            }
+    
+            // Filter active colors for this specific year
+            const activeColors = specificConfig.color_options
+                .filter(color => color.is_active)
+                .sort((a, b) => (a.price_adjustment || 0) - (b.price_adjustment || 0));
+    
+            // Reset color selection
+            this.currentConfig.color = null;
+            
+            // Update color display with filtered colors
+            this.resetColorDisplay();
+            this.renderColorOptions(activeColors);
+            this.updateSummary();
+        } catch (error) {
+            console.error("Error updating color options for year:", error);
+        }
+    }    
 
     // Handle accessory updates
     renderAccessoryOptions() {
         const accessories =
-            this.configurationData.find(
-                (config) =>
-                    config._engines.some(
-                        (engine) => engine.id === parseInt(this.currentConfig.engine)
-                    ) &&
-                    config._trims.some(
-                        (trim) => trim.id === parseInt(this.currentConfig.trim)
-                    )
-            )?.accessories_id?.[0] || [];
+        this.configurationData.find(
+            (config) =>
+                config._engines.some(
+                    (engine) => engine.id === parseInt(this.currentConfig.engine)
+                ) &&
+                config._trims.some(
+                    (trim) => trim.id === parseInt(this.currentConfig.trim)
+                ) &&
+                config.year === this.currentConfig.year // Add this line
+        )?.accessories_id?.[0] || [];
 
         const additionalContainer = document.querySelector(
             ".additional-selection .radio-group"
@@ -1287,7 +1323,8 @@ class ConfiguratorPage {
     renderSpecifications() {
         const currentConfig = this.configurationData.find(config =>
             config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
-            config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
+            config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim)) &&
+            config.year === this.currentConfig.year 
         );
 
         const specs = currentConfig?._completespecs?.specifications || [];
