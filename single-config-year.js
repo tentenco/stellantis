@@ -1505,67 +1505,58 @@ class ConfiguratorPage {
 document.addEventListener("DOMContentLoaded", () => {
     window.configuratorInstance = new ConfiguratorPage();
     const submitButton = document.querySelector('input[type="submit"][data-form="submit-btn"]');
+
     if (submitButton) {
         submitButton.addEventListener("click", async function (e) {
             e.preventDefault();
-            
+
             try {
                 const form = submitButton.closest("form");
                 const formData = new FormData(form);
                 const data = {};
-                
                 const configuratorInstance = window.configuratorInstance;
-                
+
                 // 獲取品牌代碼
-                if (configuratorInstance?.currentConfig?.model?.brand_code) {
-                    data.brand_code = configuratorInstance.currentConfig.model.brand_code;
-                }
-                
-                // 獲取車型資訊
-                if (configuratorInstance?.currentConfig?.model) {
-                    data.model = configuratorInstance.currentConfig.model.name;
-                }
-                
-                // 獲取基本配置資訊
-                data.engine = formData.get("engine");
-                data.trim = formData.get("trim");
-                data.year = formData.get("year");
-                data.color = formData.get("color");
-                data.additional = formData.getAll("additional");
-                data.payment = formData.get("payment");
-                data.installmentPrice = formData.get("installment-price");
-                data.installmentMonth = formData.get("installment-month");
-                
-                // 獲取經銷商資訊
+                data.brand_code = configuratorInstance?.currentConfig?.model?.brand_code || "";
+                data.model = configuratorInstance?.currentConfig?.model?.name || "";
+
+                // 表單欄位
+                data.engine = formData.get("engine") || "";
+                data.trim = formData.get("trim") || "";
+                data.year = formData.get("year") || "";
+                data.color = formData.get("color") || "";
+                data.additional = formData.getAll("additional") || [];
+                data.payment = formData.get("payment") || "";
+                data.installmentPrice = formData.get("installment-price") || "";
+                data.installmentMonth = formData.get("installment-month") || "";
+
+                // 經銷商
                 const selectedDealer = document.querySelector('input[name="dealer"]:checked');
-                if (selectedDealer) {
-                    data.dealerName = selectedDealer.value;
-                }
-                
-                // 添加年份文件URL
+                data.dealerName = selectedDealer?.value || "";
+
+                // 年份文件URL
                 const selectedYear = document.querySelector('input[name="year"]:checked');
-                if (selectedYear) {
-                    data.yearFileUrl = selectedYear.dataset.fileUrl || '';
-                }
-                
-                // 獲取總價
+                data.yearFileUrl = selectedYear?.dataset?.fileUrl || "";
+
+                // 總價
                 const totalPriceElement = document.getElementById("model-price");
                 if (totalPriceElement) {
-                    // 移除貨幣符號和千分位分隔符，只保留數字
                     const totalPriceText = totalPriceElement.textContent;
                     const numericPrice = totalPriceText.replace(/[^\d]/g, '');
                     data.totalPrice = parseInt(numericPrice, 10);
+                } else {
+                    data.totalPrice = 0;
                 }
-                
-                // 顯示載入中狀態
+
+                // 顯示資料
+                console.log("送出的資料 JSON:", JSON.stringify(data, null, 2));
+
+                // API 呼叫
+                const apiUrl = `${configuratorInstance.XANO_API_URL}/Test_GetKey`;
+
                 submitButton.value = "處理中...";
                 submitButton.disabled = true;
-                
-                // 執行API POST請求
-                const apiUrl = `${configuratorInstance.XANO_API_URL}/Test_GetKey`;
-                
-                console.log("送出的數據:", data);
-                
+
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
@@ -1573,42 +1564,27 @@ document.addEventListener("DOMContentLoaded", () => {
                     },
                     body: JSON.stringify(data)
                 });
-                
+
+                console.log("response.status:", response.status);
+                const resultText = await response.text();
+                console.log("response text:", resultText);
+
                 if (!response.ok) {
-                    throw new Error('API請求失敗');
+                    throw new Error(`API 錯誤，狀態碼: ${response.status}`);
                 }
-                
-                const result = await response.json();
-                console.log("API回應:", result);
-                
-                // 如果API返回了URL，則進行重定向
-                if (result.redirectUrl) {
-                    window.location.href = result.redirectUrl;
-                    return;
-                }
-                
-                // 如果API返回了orderId
-                if (result.orderId) {
-                    localStorage.setItem("orderId", result.orderId);
-                }
-                
-                // 同時保存表單數據到本地存儲（備用方案）
-                localStorage.setItem("formData", JSON.stringify(data));
-                
-                // 重定向到結帳頁面
-                const pathSegments = window.location.pathname.split('/');
-                const brandSlug = pathSegments[1];
-                window.location.href = `/${brandSlug}/checkout`;
-                
+
+                const result = JSON.parse(resultText);
+                console.log("成功回傳 JSON:", result);
+
+                // 移除所有 redirect 動作
+                // localStorage.setItem("orderId", result.orderId);
+                // window.location.href = `/${brandSlug}/checkout`;
+
             } catch (error) {
-                console.error('提交表單時出錯:', error);
-                
-                // 恢復按鈕狀態
+                console.error("❌ 錯誤發生:", error);
+                alert(`提交表單時發生錯誤，請稍後再試。\n錯誤訊息: ${error.message}`);
                 submitButton.value = "提交";
                 submitButton.disabled = false;
-                
-                // 顯示錯誤訊息
-                alert('提交表單時發生錯誤，請稍後再試');
             }
         });
     }
