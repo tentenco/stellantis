@@ -1513,14 +1513,12 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 const form = submitButton.closest("form");
                 const formData = new FormData(form);
-                const data = {};
                 const configuratorInstance = window.configuratorInstance;
+                const data = {};
 
-                // 獲取品牌代碼
+                // 基本車輛與表單資料
                 data.brand_code = configuratorInstance?.currentConfig?.model?.brand_code || "";
                 data.model = configuratorInstance?.currentConfig?.model?.name || "";
-
-                // 表單欄位
                 data.engine = formData.get("engine") || "";
                 data.trim = formData.get("trim") || "";
                 data.year = formData.get("year") || "";
@@ -1529,16 +1527,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 data.payment = formData.get("payment") || "";
                 data.installmentPrice = formData.get("installment-price") || "";
                 data.installmentMonth = formData.get("installment-month") || "";
+                data.area = formData.get("area") || "";
+                data.specLinkURL = configuratorInstance?.currentConfig?.specLinkURL || "";
 
-                // 經銷商
+                // 經銷商資訊
                 const selectedDealer = document.querySelector('input[name="dealer"]:checked');
-                data.dealerName = selectedDealer?.value || "";
+                if (selectedDealer) {
+                    data.dealerName = selectedDealer.value || "";
+                    data.dealerAddress = selectedDealer.dataset.address || "";
+                    data.dealerPhone = selectedDealer.dataset.phone || "";
+                }
 
                 // 年份文件URL
                 const selectedYear = document.querySelector('input[name="year"]:checked');
                 data.yearFileUrl = selectedYear?.dataset?.fileUrl || "";
 
-                // 總價
+                // 總價處理
                 const totalPriceElement = document.getElementById("model-price");
                 if (totalPriceElement) {
                     const totalPriceText = totalPriceElement.textContent;
@@ -1548,15 +1552,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     data.totalPrice = 0;
                 }
 
-                // 顯示資料
-                console.log("送出的資料 JSON:", JSON.stringify(data, null, 2));
-
-                // API 呼叫
-                const apiUrl = `${configuratorInstance.XANO_API_URL}/Test_GetKey`;
-
+                // 顯示送出狀態
                 submitButton.value = "處理中...";
                 submitButton.disabled = true;
 
+                // 呼叫 Xano API
+                const apiUrl = `${configuratorInstance.XANO_API_URL}/Test_GetKey`;
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
@@ -1565,8 +1566,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify(data)
                 });
 
-                console.log("response.status:", response.status);
                 const resultText = await response.text();
+                console.log("response.status:", response.status);
                 console.log("response text:", resultText);
 
                 if (!response.ok) {
@@ -1576,12 +1577,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 const result = JSON.parse(resultText);
                 console.log("成功回傳 JSON:", result);
 
-                // 移除所有 redirect 動作
-                // localStorage.setItem("orderId", result.orderId);
-                // window.location.href = `/${brandSlug}/checkout`;
+                // 儲存本地資料
+                localStorage.setItem("formData", JSON.stringify(data));
+
+                // 取得品牌名稱並跳轉
+                const pathSegments = window.location.pathname.split('/');
+                const brandName = pathSegments[1];
+                window.location.href = `/${brandName}/checkout`;
 
             } catch (error) {
-                console.error("❌ 錯誤發生:", error);
+                console.error("❌ 發生錯誤:", error);
                 alert(`提交表單時發生錯誤，請稍後再試。\n錯誤訊息: ${error.message}`);
                 submitButton.value = "提交";
                 submitButton.disabled = false;
