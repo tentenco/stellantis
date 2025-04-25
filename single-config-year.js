@@ -1504,55 +1504,112 @@ class ConfiguratorPage {
 
 document.addEventListener("DOMContentLoaded", () => {
     window.configuratorInstance = new ConfiguratorPage();
-
     const submitButton = document.querySelector('input[type="submit"][data-form="submit-btn"]');
     if (submitButton) {
-        submitButton.addEventListener("click", function (e) {
+        submitButton.addEventListener("click", async function (e) {
             e.preventDefault();
-            const form = submitButton.closest("form");
-            const formData = new FormData(form);
-            const data = {};
-
-            data.area = formData.get("area");
-            data.engine = formData.get("engine");
-            data.trim = formData.get("trim");
-            data.year = formData.get("year");  // 這將是 year_obj 中的 year_code
-            data.color = formData.get("color");
-            data.additional = formData.getAll("additional");
-            data.payment = formData.get("payment");
-            data.installmentPrice = formData.get("installment-price");
-            data.installmentMonth = formData.get("installment-month");
             
-            // 添加年份文件URL到表單數據
-            const selectedYear = document.querySelector('input[name="year"]:checked');
-            if (selectedYear) {
-                data.yearFileUrl = selectedYear.dataset.fileUrl || '';
+            try {
+                const form = submitButton.closest("form");
+                const formData = new FormData(form);
+                const data = {};
+                
+                const configuratorInstance = window.configuratorInstance;
+                
+                // 獲取品牌代碼
+                if (configuratorInstance?.currentConfig?.model?.brand_code) {
+                    data.brand_code = configuratorInstance.currentConfig.model.brand_code;
+                }
+                
+                // 獲取車型資訊
+                if (configuratorInstance?.currentConfig?.model) {
+                    data.model = configuratorInstance.currentConfig.model.name;
+                }
+                
+                // 獲取基本配置資訊
+                data.engine = formData.get("engine");
+                data.trim = formData.get("trim");
+                data.year = formData.get("year");
+                data.color = formData.get("color");
+                data.additional = formData.getAll("additional");
+                data.payment = formData.get("payment");
+                data.installmentPrice = formData.get("installment-price");
+                data.installmentMonth = formData.get("installment-month");
+                
+                // 獲取經銷商資訊
+                const selectedDealer = document.querySelector('input[name="dealer"]:checked');
+                if (selectedDealer) {
+                    data.dealerName = selectedDealer.value;
+                }
+                
+                // 添加年份文件URL
+                const selectedYear = document.querySelector('input[name="year"]:checked');
+                if (selectedYear) {
+                    data.yearFileUrl = selectedYear.dataset.fileUrl || '';
+                }
+                
+                // 獲取總價
+                const totalPriceElement = document.getElementById("model-price");
+                if (totalPriceElement) {
+                    // 移除貨幣符號和千分位分隔符，只保留數字
+                    const totalPriceText = totalPriceElement.textContent;
+                    const numericPrice = totalPriceText.replace(/[^\d]/g, '');
+                    data.totalPrice = parseInt(numericPrice, 10);
+                }
+                
+                // 顯示載入中狀態
+                submitButton.value = "處理中...";
+                submitButton.disabled = true;
+                
+                // 執行API POST請求
+                const apiUrl = `${configuratorInstance.XANO_API_URL}/Test_GetKey`;
+                
+                console.log("送出的數據:", data);
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('API請求失敗');
+                }
+                
+                const result = await response.json();
+                console.log("API回應:", result);
+                
+                // 如果API返回了URL，則進行重定向
+                if (result.redirectUrl) {
+                    window.location.href = result.redirectUrl;
+                    return;
+                }
+                
+                // 如果API返回了orderId
+                if (result.orderId) {
+                    localStorage.setItem("orderId", result.orderId);
+                }
+                
+                // 同時保存表單數據到本地存儲（備用方案）
+                localStorage.setItem("formData", JSON.stringify(data));
+                
+                // 重定向到結帳頁面
+                const pathSegments = window.location.pathname.split('/');
+                const brandSlug = pathSegments[1];
+                window.location.href = `/${brandSlug}/checkout`;
+                
+            } catch (error) {
+                console.error('提交表單時出錯:', error);
+                
+                // 恢復按鈕狀態
+                submitButton.value = "提交";
+                submitButton.disabled = false;
+                
+                // 顯示錯誤訊息
+                alert('提交表單時發生錯誤，請稍後再試');
             }
-
-            // 處理程序的其餘部分保持不變
-
-            const selectedDealer = document.querySelector('input[name="dealer"]:checked');
-            if (selectedDealer) {
-                data.dealerName = selectedDealer.value;
-                data.dealerAddress = selectedDealer.dataset.address;
-                data.dealerPhone = selectedDealer.dataset.phone;
-            }
-
-            const configuratorInstance = window.configuratorInstance;
-            if (configuratorInstance?.currentConfig?.model) {
-                data.model = configuratorInstance.currentConfig.model.name;
-            }
-
-            if (configuratorInstance?.currentConfig?.specLinkURL) {
-                data.specLinkURL = configuratorInstance.currentConfig.specLinkURL;
-            }
-
-            localStorage.setItem("formData", JSON.stringify(data));
-
-            const pathSegments = window.location.pathname.split('/');
-            const brandName = pathSegments[1];
-
-            window.location.href = `/${brandName}/checkout`;
         });
     }
 });
