@@ -479,44 +479,48 @@ class ConfiguratorPage {
         const colorAdjustment = parseFloat(
             document.querySelector('input[name="color"]:checked')?.dataset.price || 0
         );
-
+        const yearAdjustment = parseFloat(
+            document.querySelector('input[name="year"]:checked')?.dataset.price || 0
+        );
+    
         // Add accessories price adjustments
         const accessoryAdjustments = Array.from(
             document.querySelectorAll('input[name="additional"]:checked')
         ).reduce((total, accessory) => {
             return total + (parseFloat(accessory.dataset.price) || 0);
         }, 0);
-
+    
         // 計算總價格
         const totalPrice =
             basePrice +
             engineAdjustment +
             trimAdjustment +
             colorAdjustment +
+            yearAdjustment +
             accessoryAdjustments;
-
+    
         // 更新所有相关的价格显示元素
         const priceElements = {
             modelPrice: document.getElementById("model-price"),
             cashPrice: document.getElementById("cash-price"),
         };
-
+    
         const formattedPrice = new Intl.NumberFormat("en-US", {
             style: "currency",
             currency: "TWD",
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
         }).format(totalPrice);
-
+    
         // 價格顯示
         Object.values(priceElements).forEach((element) => {
             if (element) {
                 element.textContent = formattedPrice;
             }
         });
-
+    
         this.updateInstallmentOptions();
-
+    
         this.calculateMonthlyPayment();
     }
 
@@ -665,73 +669,85 @@ class ConfiguratorPage {
         );
         const summaryEngine = document.getElementById("summary-engine");
         const summaryEnginePrice = document.getElementById("summary-engine-price");
-
+    
         if (selectedEngine && summaryEngine && summaryEnginePrice) {
             const engineLabel = selectedEngine
                 .closest(".form_option_wrap")
                 .querySelector(".u-weight-bold").textContent;
             summaryEngine.textContent = engineLabel;
-
+    
             const enginePrice = parseFloat(selectedEngine.dataset.price) || 0;
             summaryEnginePrice.textContent =
                 enginePrice > 0 ? `+NT$${enginePrice.toLocaleString()}` : "包含";
         }
-
+    
         // Update trim summary
         const selectedTrim = document.querySelector('input[name="trim"]:checked');
         const summaryTrim = document.getElementById("summary-trim");
         const summaryTrimPrice = document.getElementById("summary-trim-price");
-
+    
         if (selectedTrim && summaryTrim && summaryTrimPrice) {
             const trimLabel = selectedTrim
                 .closest(".form_option_wrap")
                 .querySelector(".u-weight-bold").textContent;
             summaryTrim.textContent = trimLabel;
-
+    
             const modelPrice = this.currentConfig.model?.price || 0;
             const trimPrice = parseFloat(selectedTrim.dataset.price) || 0;
             const totalPrice = modelPrice + trimPrice;
             summaryTrimPrice.textContent = `NT$${totalPrice.toLocaleString()}`;
         }
-
+    
         // Update year summary
         const selectedYear = document.querySelector('input[name="year"]:checked');
         const summaryYear = document.getElementById("summary-year");
+        const summaryYearPrice = document.getElementById("summary-year-price");
         
         if (selectedYear && summaryYear) {
-            summaryYear.textContent = `${selectedYear.value}年式`;
+            // Get the year display text from the label
+            const yearLabel = selectedYear
+                .closest(".form_option_wrap")
+                .querySelector(".u-weight-bold").textContent;
+            summaryYear.textContent = yearLabel;
+            
+            // Update year price if element exists
+            if (summaryYearPrice) {
+                const yearPrice = parseFloat(selectedYear.dataset.price) || 0;
+                summaryYearPrice.textContent = 
+                    yearPrice > 0 ? `+NT$${yearPrice.toLocaleString()}` : "包含";
+            }
         }
-
+    
         // Update color summary
         const selectedColor = document.querySelector('input[name="color"]:checked');
         const summaryColor = document.getElementById("summary-color");
         const summaryColorPrice = document.getElementById("summary-color-price");
-
+    
         if (selectedColor && summaryColor && summaryColorPrice) {
             const colorLabel = document.querySelector(".color-label").textContent;
             summaryColor.textContent = colorLabel;
-
+    
             const colorPrice = parseFloat(selectedColor.dataset.price) || 0;
             summaryColorPrice.textContent =
                 colorPrice > 0 ? `+NT$${colorPrice.toLocaleString()}` : "包含";
         }
-
+    
         // Update accessories summary
         const selectedAccessories = document.querySelectorAll(
             'input[name="additional"]:checked'
         );
         const summaryGroup = document.querySelector(".summary_group");
-
+    
         const oldAccessorySummaries = document.querySelectorAll(
             ".summary_row.accessory"
         );
         oldAccessorySummaries.forEach((row) => row.remove());
-
+    
         selectedAccessories.forEach((accessory) => {
             const accessoryRow = document.createElement("div");
             accessoryRow.className = "summary_row accessory";
             const priceAdjustment = parseFloat(accessory.dataset.price) || 0;
-
+    
             accessoryRow.innerHTML = `
                 <div>${accessory
                     .closest(".form_option_wrap")
@@ -742,7 +758,7 @@ class ConfiguratorPage {
                     : "包含"
                 }</div>
             `;
-
+    
             const specLink = summaryGroup
                 .querySelector("#summary-spec-link")
                 ?.closest(".summary_row");
@@ -752,7 +768,7 @@ class ConfiguratorPage {
                 summaryGroup.appendChild(accessoryRow);
             }
         });
-
+    
         // Find the configuration details based on selected engine and trim and year
         const currentConfig = this.configurationData.find(config =>
             config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
@@ -791,7 +807,6 @@ class ConfiguratorPage {
             this.currentConfig.specLinkURL = specLinkURL;
         }
     }
-
     async updateEngineOptions() {
         try {
             if (!this.currentConfig.model || !this.configurationData) {
@@ -1089,6 +1104,12 @@ class ConfiguratorPage {
                     .map(desc => `<li>${desc}</li>`)
                     .join("");
                 
+                // Format price for display
+                const priceAdjustment = yearObj.price || 0;
+                const formattedPrice = priceAdjustment > 0 ? 
+                    `+NT${priceAdjustment.toLocaleString()}` : 
+                    "+NT$0";
+                
                 const yearOption = document.createElement("label");
                 yearOption.className = "form_option_wrap w-radio";
                 yearOption.innerHTML = `
@@ -1099,6 +1120,8 @@ class ConfiguratorPage {
                         required 
                         class="w-form-formradioinput hide w-radio-input" 
                         value="${yearObj.year_code}"
+                        data-price="${priceAdjustment}"
+                        data-file-url="${yearObj.file_url?.url || ''}"
                         ${index === 0 ? "checked" : ""}>
                     <div class="form_radio_card">
                         <div class="radio_mark">
@@ -1107,10 +1130,15 @@ class ConfiguratorPage {
                         <div class="option_content">
                             <div class="option_title_row">
                                 <div class="u-weight-bold">${yearObj.year}年式</div>
+                                <div>${formattedPrice}</div>
                             </div>
                             <ul class="year-description-list">
                                 ${descriptionListItems}
                             </ul>
+                            ${yearObj.file_url?.url ? 
+                                `<a href="${yearObj.file_url.url}" target="_blank" class="text_link_secondary w-inline-block">
+                                    <div>下載年式規格資訊ⓘ</div>
+                                </a>` : ''}
                         </div>
                     </div>
                     <span class="hide w-form-label" for="year-${yearObj.year_code}">Year ${yearObj.year}</span>
@@ -1125,7 +1153,10 @@ class ConfiguratorPage {
                             // Store both year and year_code in the currentConfig
                             this.currentConfig.year = yearObj.year;
                             this.currentConfig.year_code = yearObj.year_code;
+                            this.currentConfig.year_price = priceAdjustment;
+                            this.currentConfig.year_file_url = yearObj.file_url?.url || '';
                             this.updateColorOptionsForYear(yearObj.year);
+                            this.updatePriceDisplays(); // Update price when year changes
                             this.updateSummary();
                         }
                     });
@@ -1181,9 +1212,9 @@ class ConfiguratorPage {
         } catch (error) {
             console.error("Error updating color options for year:", error);
         }
-    }   
+    }
     
-        // Also need to update this method to use year_code when needed
+    // Also need to update this method to use year_code when needed
     renderAccessoryOptions() {
         const accessories =
         this.configurationData.find(
@@ -1232,7 +1263,7 @@ class ConfiguratorPage {
                     <div class="option_content">
                         <div class="option_title_row">
                             <div class="u-weight-bold">${accessory.name}</div>
-                            <div>+NT$${accessory.price_adjustment.toLocaleString()}</div>
+                            <div>+NT${accessory.price_adjustment.toLocaleString()}</div>
                         </div>
                         <div>${accessory.description || ""}</div>
                     </div>
