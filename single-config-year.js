@@ -1062,18 +1062,19 @@ class ConfiguratorPage {
                 config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
             );
     
-            // Extract unique years from filtered configurations
-            const uniqueYears = new Set();
-            relevantConfigs.forEach(config => {
-                if (config.year) {
-                    uniqueYears.add(config.year);
-                }
-            });
-    
-            const yearArray = Array.from(uniqueYears);
+            // Find the specific configuration with year_obj data
+            const configWithYearObj = relevantConfigs.find(config => config.year_obj && config.year_obj.length > 0);
             
-            // Sort years in descending order (newest first)
-            yearArray.sort((a, b) => b.localeCompare(a));
+            if (!configWithYearObj || !configWithYearObj.year_obj) {
+                console.warn("No year_obj data found in configurations");
+                return;
+            }
+            
+            // Get the year objects array
+            const yearObjs = configWithYearObj.year_obj;
+            
+            // Sort years in descending order (newest first) based on year_code
+            yearObjs.sort((a, b) => b.year_code.localeCompare(a.year_code));
     
             const yearContainer = document.querySelector(
                 ".year-selection .radio-group"
@@ -1082,17 +1083,22 @@ class ConfiguratorPage {
     
             yearContainer.innerHTML = "";
     
-            yearArray.forEach((year, index) => {
+            yearObjs.forEach((yearObj, index) => {
+                // Create HTML for description list items
+                const descriptionListItems = yearObj.description
+                    .map(desc => `<li>${desc}</li>`)
+                    .join("");
+                
                 const yearOption = document.createElement("label");
                 yearOption.className = "form_option_wrap w-radio";
                 yearOption.innerHTML = `
                     <input type="radio" 
                         name="year" 
-                        id="year-${year}" 
+                        id="year-${yearObj.year_code}" 
                         data-name="year" 
                         required 
                         class="w-form-formradioinput hide w-radio-input" 
-                        value="${year}"
+                        value="${yearObj.year_code}"
                         ${index === 0 ? "checked" : ""}>
                     <div class="form_radio_card">
                         <div class="radio_mark">
@@ -1100,11 +1106,14 @@ class ConfiguratorPage {
                         </div>
                         <div class="option_content">
                             <div class="option_title_row">
-                                <div class="u-weight-bold">${year}年式</div>
+                                <div class="u-weight-bold">${yearObj.year}年式</div>
                             </div>
+                            <ul class="year-description-list">
+                                ${descriptionListItems}
+                            </ul>
                         </div>
                     </div>
-                    <span class="hide w-form-label" for="year-${year}">Year ${year}</span>
+                    <span class="hide w-form-label" for="year-${yearObj.year_code}">Year ${yearObj.year}</span>
                 `;
     
                 yearContainer.appendChild(yearOption);
@@ -1113,8 +1122,10 @@ class ConfiguratorPage {
                 if (input) {
                     input.addEventListener("change", () => {
                         if (input.checked) {
-                            this.currentConfig.year = year;
-                            this.updateColorOptionsForYear(year);
+                            // Store both year and year_code in the currentConfig
+                            this.currentConfig.year = yearObj.year;
+                            this.currentConfig.year_code = yearObj.year_code;
+                            this.updateColorOptionsForYear(yearObj.year);
                             this.updateSummary();
                         }
                     });
@@ -1128,7 +1139,7 @@ class ConfiguratorPage {
             // Show the year selection section if there are options
             const yearSelection = document.querySelector(".year-selection");
             if (yearSelection) {
-                yearSelection.style.display = yearArray.length > 0 ? "block" : "none";
+                yearSelection.style.display = yearObjs.length > 0 ? "block" : "none";
             }
             
         } catch (error) {
@@ -1136,6 +1147,7 @@ class ConfiguratorPage {
         }
     }
     
+    // You'll also need to update this method to work with the year_obj structure
     async updateColorOptionsForYear(year) {
         try {
             if (!this.currentConfig.engine || !this.currentConfig.trim || !year) {
@@ -1169,9 +1181,9 @@ class ConfiguratorPage {
         } catch (error) {
             console.error("Error updating color options for year:", error);
         }
-    }    
-
-    // Handle accessory updates
+    }   
+    
+        // Also need to update this method to use year_code when needed
     renderAccessoryOptions() {
         const accessories =
         this.configurationData.find(
@@ -1182,18 +1194,18 @@ class ConfiguratorPage {
                 config._trims.some(
                     (trim) => trim.id === parseInt(this.currentConfig.trim)
                 ) &&
-                config.year === this.currentConfig.year // Add this line
+                config.year === this.currentConfig.year // Keep using year for compatibility
         )?.accessories_id?.[0] || [];
-
+    
         const additionalContainer = document.querySelector(
             ".additional-selection .radio-group"
         );
         const additionalSelection = document.querySelector(".additional-selection");
         if (!additionalContainer || !additionalSelection) return;
-
+    
         // Clear existing options
         additionalContainer.innerHTML = "";
-
+    
         // Check if there are any accessories
         if (accessories.length === 0) {
             additionalSelection.style.display = "none";
@@ -1201,7 +1213,7 @@ class ConfiguratorPage {
         } else {
             additionalSelection.style.display = "block";
         }
-
+    
         // Render accessory options
         accessories.forEach((accessory) => {
             const accessoryOption = document.createElement("label");
@@ -1228,9 +1240,9 @@ class ConfiguratorPage {
                 <span class="hide w-form-label" for="additional-${accessory.id
                 }">Checkbox</span>
             `;
-
+    
             additionalContainer.appendChild(accessoryOption);
-
+    
             const input = accessoryOption.querySelector("input");
             input.addEventListener("change", () => {
                 this.updateSummary();
