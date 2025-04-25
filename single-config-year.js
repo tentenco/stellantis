@@ -1485,14 +1485,20 @@ document.addEventListener("DOMContentLoaded", () => {
             data.area = formData.get("area");
             data.engine = formData.get("engine");
             data.trim = formData.get("trim");
-            data.year = formData.get("year");  // Add this line
+            data.year = formData.get("year");  // 這將是 year_obj 中的 year_code
             data.color = formData.get("color");
             data.additional = formData.getAll("additional");
             data.payment = formData.get("payment");
             data.installmentPrice = formData.get("installment-price");
             data.installmentMonth = formData.get("installment-month");
+            
+            // 添加年份文件URL到表單數據
+            const selectedYear = document.querySelector('input[name="year"]:checked');
+            if (selectedYear) {
+                data.yearFileUrl = selectedYear.dataset.fileUrl || '';
+            }
 
-            // Rest of the handler remains the same
+            // 處理程序的其餘部分保持不變
 
             const selectedDealer = document.querySelector('input[name="dealer"]:checked');
             if (selectedDealer) {
