@@ -1553,7 +1553,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 // 顯示送出狀態
-                submitButton.value = "處理中...";
+                submitButton.value = submitButton.getAttribute('data-wait') || "處理中...";
                 submitButton.disabled = true;
 
                 // 呼叫 Xano API
@@ -1580,15 +1580,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 // 儲存本地資料
                 localStorage.setItem("formData", JSON.stringify(data));
 
-                // 取得品牌名稱並跳轉
-                const pathSegments = window.location.pathname.split('/');
-                const brandName = pathSegments[1];
-                window.location.href = `/${brandName}/checkout`;
+                // ===== 修改這裡：使用新的重定向邏輯 =====
+                
+                // 從回應中提取所需的值
+                const p2 = result.result1.data.p2;
+                const token = result.order.response.result.data.token;
+                
+                // 構建重定向URL並導航
+                const redirectUrl = `https://stservice.startekmobility.com/OnlineOrder/?=${p2}&token=${token}`;
+                window.location.href = redirectUrl;
 
             } catch (error) {
                 console.error("❌ 發生錯誤:", error);
                 alert(`提交表單時發生錯誤，請稍後再試。\n錯誤訊息: ${error.message}`);
-                submitButton.value = "提交";
+                submitButton.value = "立即訂購"; // 恢復原始文本
                 submitButton.disabled = false;
             }
         });
