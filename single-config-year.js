@@ -1193,7 +1193,7 @@ class ConfiguratorPage {
             const specificConfig = this.configurationData.find(config => 
                 config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
                 config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim)) &&
-                config.year === year
+                config.year_obj && config.year_obj.some(yearItem => yearItem.year === year)
             );
     
             if (!specificConfig?.color_options) {
@@ -1229,7 +1229,7 @@ class ConfiguratorPage {
                 config._trims.some(
                     (trim) => trim.id === parseInt(this.currentConfig.trim)
                 ) &&
-                config.year === this.currentConfig.year // Keep using year for compatibility
+                config.year_obj && config.year_obj.some(yearItem => yearItem.year === this.currentConfig.year)
         )?.accessories_id?.[0] || [];
     
         const additionalContainer = document.querySelector(
@@ -1371,7 +1371,7 @@ class ConfiguratorPage {
         const currentConfig = this.configurationData.find(config =>
             config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
             config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim)) &&
-            config.year === this.currentConfig.year 
+            config.year_obj && config.year_obj.some(yearItem => yearItem.year === this.currentConfig.year) 
         );
 
         const specs = currentConfig?._completespecs?.specifications || [];
