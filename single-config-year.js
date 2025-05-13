@@ -1575,20 +1575,39 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 const result = JSON.parse(resultText);
+                
+                // 更詳細地記錄API回應到控制台，方便檢查
                 console.log("成功回傳 JSON:", result);
-
-                // 儲存本地資料
-                localStorage.setItem("formData", JSON.stringify(data));
-
-                // ===== 修改這裡：使用新的重定向邏輯 =====
+                console.log("回傳的 p2 值:", result.result1?.data?.p2);
+                console.log("回傳的 token 值:", result.order?.response?.result?.data?.token);
+                
+                // 添加倒數計時器顯示
+                submitButton.value = "10秒後跳轉...";
                 
                 // 從回應中提取所需的值
-                const p2 = result.result1.data.p2;
-                const token = result.order.response.result.data.token;
+                const p2 = result.result1?.data?.p2;
+                const token = result.order?.response?.result?.data?.token;
                 
-                // 構建重定向URL並導航
+                // 構建重定向URL
                 const redirectUrl = `https://stservice.startekmobility.com/OnlineOrder/?=${p2}&token=${token}`;
-                window.location.href = redirectUrl;
+                console.log("即將跳轉到:", redirectUrl);
+                
+                // 儲存本地資料
+                localStorage.setItem("formData", JSON.stringify(data));
+                
+                // 10秒延遲後重定向
+                let countdown = 10;
+                const countdownInterval = setInterval(() => {
+                    countdown--;
+                    if (countdown <= 0) {
+                        clearInterval(countdownInterval);
+                        // 執行重定向
+                        window.location.href = redirectUrl;
+                    } else {
+                        // 更新按鈕文字顯示倒數
+                        submitButton.value = `${countdown}秒後跳轉...`;
+                    }
+                }, 1000);
 
             } catch (error) {
                 console.error("❌ 發生錯誤:", error);
