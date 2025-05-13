@@ -1591,7 +1591,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const token = result.order.response.result.data.token;
                 
                 // 構建重定向URL並導航
-                const redirectUrl = `https://stservice.startekmobility.com/OnlineOrder/?=${p2}&token=${token}`;
+                const redirectUrl = `https://stservice.startekmobility.com/OnlineOrder/?s=${p2}&token=${token}`;
                 window.location.href = redirectUrl;
 
             } catch (error) {
