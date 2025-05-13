@@ -890,12 +890,16 @@ class ConfiguratorPage {
 
     async handleEngineChange(engineId) {
         console.log("Engine changed:", engineId);
-
+    
         this.currentConfig.engine = engineId;
         const availableTrims = await this.getTrimsForEngine(engineId);
-
+    
         this.currentConfig.trim = null;
         this.renderTrimOptions(availableTrims);
+        
+        // 確保切換回exterior視圖
+        this.switchView("exterior");
+        
         this.updateSummary();
     }
 
