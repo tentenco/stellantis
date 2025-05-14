@@ -195,7 +195,7 @@ class ConfiguratorPage {
             input.addEventListener("change", function () {
                 paymentContents.forEach((content) => (content.style.display = "none"));
                 const selectedContent = document.querySelector(
-                    `.payment_content.${this.value}`
+                    `.payment_content.${this.value.toLowerCase()}`
                 );
                 if (selectedContent) selectedContent.style.display = "block";
             });
