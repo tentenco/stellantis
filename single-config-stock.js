@@ -1563,44 +1563,221 @@ class ConfiguratorPage {
         }
     }
 
-    // Add method to update stock display
+    // Update the updateStockDisplay method
     updateStockDisplay(stockData) {
         const stockSection = document.querySelector('.stock_contain');
         if (!stockSection) return;
-
+    
         // Hide section if no stock available
         if (!stockData || stockData.length === 0) {
             this.hideStockSection();
             return;
         }
-
+    
         // Show the section
         stockSection.style.display = 'block';
-
-        // Get the product list container
-        const productList = stockSection.querySelector('.product_list');
-        if (!productList) return;
-
-        // Clear existing items (except the template if using Finsweet)
-        const existingItems = productList.querySelectorAll('.product_card:not(.w-dyn-item-template)');
+    
+        // Initialize or reinitialize Finsweet CMS Load with external data
+        this.initializeFinsweet(stockData);
+    }
+    
+    // Add new method to properly integrate with Finsweet
+    initializeFinsweet(stockData) {
+        // Transform your stock data to match Finsweet's expected format
+        const transformedData = this.transformStockDataForFinsweet(stockData);
+        
+        // Wait for Finsweet to be ready
+        window.fsAttributes = window.fsAttributes || [];
+        window.fsAttributes.push([
+            'cmsload',
+            async (listInstances) => {
+                // Get the list instance
+                const [listInstance] = listInstances;
+                
+                if (!listInstance) {
+                    console.error('No Finsweet list instance found');
+                    return;
+                }
+    
+                // Clear existing items
+                listInstance.clearItems();
+                
+                // Add your items
+                const newItems = transformedData.map(item => ({
+                    ...item,
+                    _draft: false,
+                    _archived: false
+                }));
+                
+                // Load the new items
+                await listInstance.addItems(newItems);
+                
+                // Render the items
+                listInstance.renderItems();
+            }
+        ]);
+    }
+    
+    // Transform stock data to match the template structure
+    transformStockDataForFinsweet(stockData) {
+        return stockData.map(stockItem => {
+            if (!stockItem.config) return null;
+    
+            // Calculate match level
+            const matchLevel = this.calculateMatchLevel(stockItem);
+            
+            // Find color option
+            const colorOption = stockItem.config.color_options?.find(
+                opt => opt.code === stockItem.color_code
+            );
+            
+            // Calculate total price
+            const modelsPrice = stockItem.config._models?.price || 0;
+            const trimPrice = stockItem.config.trim_price || 0;
+            const yearPrice = stockItem.config.year_obj?.[0]?.price || 0;
+            const colorPrice = colorOption?.price_adjustment || 0;
+            const totalPrice = modelsPrice + trimPrice + yearPrice + colorPrice;
+    
+            // Get accessories
+            const accessoryNames = stockItem.config.accessories_id?.length > 0
+                ? stockItem.config.accessories_id.map(acc => acc.name).join(', ')
+                : '無';
+    
+            // Create URL
+            const pathSegments = window.location.pathname.split('/');
+            const brandSlug = pathSegments[1];
+            const linkUrl = `/${brandSlug}/stock-detail?vin=${stockItem.vin}`;
+    
+            return {
+                // Map to your data attributes
+                'data-element-image': colorOption?.final_image?.[0]?.url || 'https://cdn.prod.website-files.com/6735d5a11d254f870165369e/67615937b9e72eb31b06f316_placeholder.webp',
+                'data-element-tag': matchLevel,
+                'data-element-title': this.currentConfig.model?.name || '',
+                'data-element-trim': stockItem.config._trims?.name || '',
+                'data-element-engine': stockItem.config._engines?.name || '',
+                'data-element-price': totalPrice.toLocaleString(),
+                'data-element-year': stockItem.config.year_obj?.[0]?.year || '',
+                'data-element-color': colorOption?.color_name || '',
+                'data-element-accessories': accessoryNames,
+                'data-element-dealer': this.currentDealerName || '',
+                'data-element-link': linkUrl
+            };
+        }).filter(item => item !== null);
+    }
+    
+    // Alternative approach if the above doesn't work - use custom rendering
+    async updateStockDisplayAlternative(stockData) {
+        const stockSection = document.querySelector('.stock_contain');
+        if (!stockSection) return;
+    
+        if (!stockData || stockData.length === 0) {
+            this.hideStockSection();
+            return;
+        }
+    
+        stockSection.style.display = 'block';
+    
+        // Get the list container
+        const listContainer = document.querySelector('#models-grid');
+        if (!listContainer) return;
+    
+        // Get the template item
+        const templateItem = listContainer.querySelector('.w-dyn-item');
+        if (!templateItem) return;
+    
+        // Clear existing items (keep the template)
+        const existingItems = listContainer.querySelectorAll('.w-dyn-item:not(:first-child)');
         existingItems.forEach(item => item.remove());
-
-        // Get template card
-        const templateCard = productList.querySelector('.product_card');
-        if (!templateCard) return;
-
-        // Create cards for each stock item
-        stockData.forEach(stockItem => {
-            const card = this.createStockCard(templateCard, stockItem);
-            if (card) {
-                productList.appendChild(card);
+    
+        // Create new items based on stock data
+        stockData.forEach((stockItem, index) => {
+            const newItem = this.createStockCardFromTemplate(templateItem, stockItem);
+            if (newItem && index === 0) {
+                // Replace the template with the first item
+                templateItem.replaceWith(newItem);
+            } else if (newItem) {
+                // Append subsequent items
+                listContainer.appendChild(newItem);
             }
         });
-
-        // If using Finsweet CMS Load, reinitialize it
+    
+        // Trigger Finsweet re-initialization if needed
         if (window.fsAttributes && window.fsAttributes.cmsload) {
-            window.fsAttributes.cmsload.init();
+            // Trigger a re-render of the CMS Load instance
+            const event = new CustomEvent('cmsload:renderitems');
+            window.dispatchEvent(event);
         }
+    }
+    
+    // Create card from template with proper data binding
+    createStockCardFromTemplate(template, stockItem) {
+        if (!stockItem.config) return null;
+    
+        const newCard = template.cloneNode(true);
+        
+        // Update all elements with data-element attributes
+        const updateElement = (selector, value) => {
+            const element = newCard.querySelector(`[data-element="${selector}"]`);
+            if (element) {
+                if (selector === 'image') {
+                    element.src = value;
+                    element.srcset = value;
+                } else if (selector === 'link') {
+                    element.href = value;
+                } else {
+                    element.textContent = value;
+                }
+            }
+        };
+    
+        // Find color option
+        const colorOption = stockItem.config.color_options?.find(
+            opt => opt.code === stockItem.color_code
+        );
+    
+        // Update all elements
+        updateElement('image', colorOption?.final_image?.[0]?.url || 'https://cdn.prod.website-files.com/6735d5a11d254f870165369e/67615937b9e72eb31b06f316_placeholder.webp');
+        updateElement('tag', this.calculateMatchLevel(stockItem));
+        updateElement('title', this.currentConfig.model?.name || '');
+        updateElement('trim', stockItem.config._trims?.name || '');
+        updateElement('engine', stockItem.config._engines?.name || '');
+        
+        // Calculate and update price
+        const totalPrice = this.calculateStockTotalPrice(stockItem);
+        updateElement('price', totalPrice.toLocaleString());
+        
+        updateElement('year', stockItem.config.year_obj?.[0]?.year || '');
+        updateElement('color', colorOption?.color_name || '');
+        updateElement('accessories', this.getStockAccessoriesText(stockItem));
+        updateElement('dealer', this.currentDealerName || '');
+        
+        // Update link
+        const pathSegments = window.location.pathname.split('/');
+        const brandSlug = pathSegments[1];
+        updateElement('link', `/${brandSlug}/stock-detail?vin=${stockItem.vin}`);
+    
+        return newCard;
+    }
+    
+    // Helper method to calculate total price
+    calculateStockTotalPrice(stockItem) {
+        const modelsPrice = stockItem.config._models?.price || 0;
+        const trimPrice = stockItem.config.trim_price || 0;
+        const yearPrice = stockItem.config.year_obj?.[0]?.price || 0;
+        const colorOption = stockItem.config.color_options?.find(
+            opt => opt.code === stockItem.color_code
+        );
+        const colorPrice = colorOption?.price_adjustment || 0;
+        
+        return modelsPrice + trimPrice + yearPrice + colorPrice;
+    }
+    
+    // Helper method to get accessories text
+    getStockAccessoriesText(stockItem) {
+        if (stockItem.config.accessories_id && stockItem.config.accessories_id.length > 0) {
+            return stockItem.config.accessories_id.map(acc => acc.name).join(', ');
+        }
+        return '無';
     }
 
     // Add method to create individual stock card
