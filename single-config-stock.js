@@ -1531,7 +1531,7 @@ class ConfiguratorPage {
             const brandCode = brandSlug ? brandSlug.toUpperCase() : ''; // Convert to "PEUGEOT"
             
             // Get model code from model data
-            const modelCode = this.currentConfig.model.model_code || this.currentConfig.model.name || '';
+            const modelCode = this.currentConfig.model.models_code || '';
     
             console.log("Fetching stock data:", { brand: brandCode, model: modelCode, dealerName });
     
