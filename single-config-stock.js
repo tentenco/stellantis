@@ -1524,13 +1524,17 @@ class ConfiguratorPage {
                 this.hideStockSection();
                 return;
             }
-
-            // Get brand code from model data
-            const brandCode = this.currentConfig.model.brand_code || '';
+    
+            // Get brand from URL path and convert to uppercase
+            const pathSegments = window.location.pathname.split('/');
+            const brandSlug = pathSegments[1]; // e.g., "peugeot"
+            const brandCode = brandSlug ? brandSlug.toUpperCase() : ''; // Convert to "PEUGEOT"
+            
+            // Get model code from model data
             const modelCode = this.currentConfig.model.model_code || this.currentConfig.model.name || '';
-
+    
             console.log("Fetching stock data:", { brand: brandCode, model: modelCode, dealerName });
-
+    
             const response = await fetch(`${this.XANO_API_URL}/Stock_GetStock`, {
                 method: 'POST',
                 headers: {
@@ -1542,17 +1546,17 @@ class ConfiguratorPage {
                     dealerName: dealerName
                 })
             });
-
+    
             if (!response.ok) {
                 throw new Error(`Failed to fetch stock data: ${response.status}`);
             }
-
+    
             const stockData = await response.json();
             console.log("Stock data received:", stockData);
-
+    
             this.stockData = stockData;
             this.updateStockDisplay(stockData);
-
+    
         } catch (error) {
             console.error("Error fetching stock data:", error);
             this.hideStockSection();
