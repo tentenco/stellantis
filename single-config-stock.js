@@ -19,6 +19,8 @@ class ConfiguratorPage {
             exterior: null,
             interior: null,
         };
+        this.stockData = [];
+        this.currentDealerName = null;
 
         this.init();
         this.initializeSliders();
@@ -120,6 +122,7 @@ class ConfiguratorPage {
                 this.initializeInstallmentListeners();
                 this.initializePaymentToggle();
                 this.initializeSliders();
+                this.hideStockSection();
             }
             const loadingScreen = document.getElementById('loading-screen');
             loadingScreen.classList.add('hidden');
@@ -482,14 +485,14 @@ class ConfiguratorPage {
         const yearAdjustment = parseFloat(
             document.querySelector('input[name="year"]:checked')?.dataset.price || 0
         );
-    
+
         // Add accessories price adjustments
         const accessoryAdjustments = Array.from(
             document.querySelectorAll('input[name="additional"]:checked')
         ).reduce((total, accessory) => {
             return total + (parseFloat(accessory.dataset.price) || 0);
         }, 0);
-    
+
         // 計算總價格
         const totalPrice =
             basePrice +
@@ -498,29 +501,29 @@ class ConfiguratorPage {
             colorAdjustment +
             yearAdjustment +
             accessoryAdjustments;
-    
+
         // 更新所有相关的价格显示元素
         const priceElements = {
             modelPrice: document.getElementById("model-price"),
             cashPrice: document.getElementById("cash-price"),
         };
-    
+
         const formattedPrice = new Intl.NumberFormat("en-US", {
             style: "currency",
             currency: "TWD",
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
         }).format(totalPrice);
-    
+
         // 價格顯示
         Object.values(priceElements).forEach((element) => {
             if (element) {
                 element.textContent = formattedPrice;
             }
         });
-    
+
         this.updateInstallmentOptions();
-    
+
         this.calculateMonthlyPayment();
     }
 
@@ -601,6 +604,8 @@ class ConfiguratorPage {
 
         if (!selectedArea) {
             dealerContainer.style.display = "none";
+            this.currentDealerName = null;
+            this.hideStockSection();
             return;
         }
 
@@ -639,9 +644,11 @@ class ConfiguratorPage {
 
             const input = dealerOption.querySelector("input");
             if (input) {
-                input.addEventListener("change", () => {
+                input.addEventListener("change", async () => {
                     if (input.checked) {
                         this.currentConfig.retail = dealer.id;
+                        this.currentDealerName = dealer.name;
+
                         const navDealerResult = document.querySelector(".nav_dealer_result");
                         if (navDealerResult) {
                             navDealerResult.style.display = "block";
@@ -650,11 +657,15 @@ class ConfiguratorPage {
                                 navDealerName.textContent = dealer.name || '';
                             }
                         }
+
+                        // Fetch stock data when dealer changes
+                        await this.fetchStockData(dealer.name);
                     }
                 });
             }
         });
-        // After creating the dealer options, trigger the change event on the first dealer to display it by default
+
+        // After creating the dealer options, trigger the change event on the first dealer
         const firstDealerInput = dealerContainer.querySelector('input[name="dealer"]');
         if (firstDealerInput) {
             firstDealerInput.dispatchEvent(new Event('change'));
@@ -669,85 +680,85 @@ class ConfiguratorPage {
         );
         const summaryEngine = document.getElementById("summary-engine");
         const summaryEnginePrice = document.getElementById("summary-engine-price");
-    
+
         if (selectedEngine && summaryEngine && summaryEnginePrice) {
             const engineLabel = selectedEngine
                 .closest(".form_option_wrap")
                 .querySelector(".u-weight-bold").textContent;
             summaryEngine.textContent = engineLabel;
-    
+
             const enginePrice = parseFloat(selectedEngine.dataset.price) || 0;
             summaryEnginePrice.textContent =
                 enginePrice > 0 ? `+NT$${enginePrice.toLocaleString()}` : "包含";
         }
-    
+
         // Update trim summary
         const selectedTrim = document.querySelector('input[name="trim"]:checked');
         const summaryTrim = document.getElementById("summary-trim");
         const summaryTrimPrice = document.getElementById("summary-trim-price");
-    
+
         if (selectedTrim && summaryTrim && summaryTrimPrice) {
             const trimLabel = selectedTrim
                 .closest(".form_option_wrap")
                 .querySelector(".u-weight-bold").textContent;
             summaryTrim.textContent = trimLabel;
-    
+
             const modelPrice = this.currentConfig.model?.price || 0;
             const trimPrice = parseFloat(selectedTrim.dataset.price) || 0;
             const totalPrice = modelPrice + trimPrice;
             summaryTrimPrice.textContent = `NT$${totalPrice.toLocaleString()}`;
         }
-    
+
         // Update year summary
         const selectedYear = document.querySelector('input[name="year"]:checked');
         const summaryYear = document.getElementById("summary-year");
         const summaryYearPrice = document.getElementById("summary-year-price");
-        
+
         if (selectedYear && summaryYear) {
             // Get the year display text from the label
             const yearLabel = selectedYear
                 .closest(".form_option_wrap")
                 .querySelector(".u-weight-bold").textContent;
             summaryYear.textContent = yearLabel;
-            
+
             // Update year price if element exists
             if (summaryYearPrice) {
                 const yearPrice = parseFloat(selectedYear.dataset.price) || 0;
-                summaryYearPrice.textContent = 
+                summaryYearPrice.textContent =
                     yearPrice > 0 ? `+NT$${yearPrice.toLocaleString()}` : "包含";
             }
         }
-    
+
         // Update color summary
         const selectedColor = document.querySelector('input[name="color"]:checked');
         const summaryColor = document.getElementById("summary-color");
         const summaryColorPrice = document.getElementById("summary-color-price");
-    
+
         if (selectedColor && summaryColor && summaryColorPrice) {
             const colorLabel = document.querySelector(".color-label").textContent;
             summaryColor.textContent = colorLabel;
-    
+
             const colorPrice = parseFloat(selectedColor.dataset.price) || 0;
             summaryColorPrice.textContent =
                 colorPrice > 0 ? `+NT$${colorPrice.toLocaleString()}` : "包含";
         }
-    
+
         // Update accessories summary
         const selectedAccessories = document.querySelectorAll(
             'input[name="additional"]:checked'
         );
         const summaryGroup = document.querySelector(".summary_group");
-    
+
         const oldAccessorySummaries = document.querySelectorAll(
             ".summary_row.accessory"
         );
         oldAccessorySummaries.forEach((row) => row.remove());
-    
+
         selectedAccessories.forEach((accessory) => {
             const accessoryRow = document.createElement("div");
             accessoryRow.className = "summary_row accessory";
             const priceAdjustment = parseFloat(accessory.dataset.price) || 0;
-    
+
             accessoryRow.innerHTML = `
                 <div>${accessory
                     .closest(".form_option_wrap")
@@ -758,7 +769,7 @@ class ConfiguratorPage {
                     : "包含"
                 }</div>
             `;
-    
+
             const specLink = summaryGroup
                 .querySelector("#summary-spec-link")
                 ?.closest(".summary_row");
@@ -768,31 +779,31 @@ class ConfiguratorPage {
                 summaryGroup.appendChild(accessoryRow);
             }
         });
-    
+
         // Find the configuration details based on selected engine and trim and year
         const currentConfig = this.configurationData.find(config =>
             config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
             config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim)) &&
-            config.year === this.currentConfig.year 
+            config.year === this.currentConfig.year
         );
-    
+
         // Get the brand slug from the URL
         const pathSegments = window.location.pathname.split('/');
         const brandSlug = pathSegments[1];
-    
+
         // Remove existing spec link
         const existingSpecLink = document.getElementById("summary-spec-link")?.closest(".summary_row");
         if (existingSpecLink) {
             existingSpecLink.remove();
         }
-    
+
         // Construct the spec link if currentConfig and brandSlug are available
         if (currentConfig && brandSlug) {
             const specLinkRow = document.createElement("div");
             specLinkRow.className = "summary_row";
             // Create the dynamic URL
             const specLinkURL = `/${brandSlug}/spec?id=${currentConfig.id}`;
-    
+
             specLinkRow.innerHTML = `
                 <a href="${specLinkURL}" 
                     target="_blank" 
@@ -802,7 +813,7 @@ class ConfiguratorPage {
                 </a>
             `;
             summaryGroup.appendChild(specLinkRow);
-    
+
             // Store the specLinkURL in currentConfig
             this.currentConfig.specLinkURL = specLinkURL;
         }
@@ -890,16 +901,16 @@ class ConfiguratorPage {
 
     async handleEngineChange(engineId) {
         console.log("Engine changed:", engineId);
-    
+
         this.currentConfig.engine = engineId;
         const availableTrims = await this.getTrimsForEngine(engineId);
-    
+
         this.currentConfig.trim = null;
         this.renderTrimOptions(availableTrims);
-        
+
         // 確保切換回exterior視圖
         this.switchView("exterior");
-        
+
         this.updateSummary();
     }
 
@@ -1038,82 +1049,82 @@ class ConfiguratorPage {
 
     async handleTrimChange(trimId) {
         this.currentConfig.trim = trimId;
-    
+
         // Find the current configuration and trim data
         const currentConfig = this.configurationData.find(config =>
             config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
             config._trims.some(trim => trim.id === parseInt(trimId))
         );
-    
+
         const trimData = currentConfig?._trims?.find(trim => trim.id === parseInt(trimId));
-    
+
         if (trimData) {
             // Update interior images for the selected trim
             this.updateInteriorImages(trimData);
         }
-    
+
         // Reset year and color selection
         this.currentConfig.year = null;
         this.currentConfig.color = null;
-        
+
         // Reset color display
         this.resetColorDisplay();
-        
+
         // Update year options based on the selected model, engine, and trim
         await this.updateYearOptions();
-        
+
         // Don't call renderColorOptions here since it will be called after year selection
-        
+
         this.renderAccessoryOptions();
         this.renderSpecifications();
         this.updateSummary();
-    }    
+    }
 
     async updateYearOptions() {
         try {
             if (!this.currentConfig.model || !this.currentConfig.engine || !this.currentConfig.trim || !this.configurationData) {
                 throw new Error("Model, engine, or trim information is missing");
             }
-    
+
             // Filter configurations based on selected model, engine, and trim
-            const relevantConfigs = this.configurationData.filter(config => 
+            const relevantConfigs = this.configurationData.filter(config =>
                 config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
                 config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
             );
-    
+
             // Find the specific configuration with year_obj data
             const configWithYearObj = relevantConfigs.find(config => config.year_obj && config.year_obj.length > 0);
-            
+
             if (!configWithYearObj || !configWithYearObj.year_obj) {
                 console.warn("No year_obj data found in configurations");
                 return;
             }
-            
+
             // Get the year objects array
             const yearObjs = configWithYearObj.year_obj;
-            
+
             // Sort years in descending order (newest first) based on year_code
             yearObjs.sort((a, b) => b.year_code.localeCompare(a.year_code));
-    
+
             const yearContainer = document.querySelector(
                 ".year-selection .radio-group"
             );
             if (!yearContainer) return;
-    
+
             yearContainer.innerHTML = "";
-    
+
             yearObjs.forEach((yearObj, index) => {
                 // Create HTML for description list items
                 const descriptionListItems = yearObj.description
                     .map(desc => `<li>${desc}</li>`)
                     .join("");
-                
+
                 // Format price for display
                 const priceAdjustment = yearObj.price || 0;
-                const formattedPrice = priceAdjustment > 0 ? 
-                    `+NT${priceAdjustment.toLocaleString()}` : 
+                const formattedPrice = priceAdjustment > 0 ?
+                    `+NT${priceAdjustment.toLocaleString()}` :
                     "+NT$0";
-                
+
                 const yearOption = document.createElement("label");
                 yearOption.className = "form_option_wrap w-radio";
                 yearOption.innerHTML = `
@@ -1139,17 +1150,17 @@ class ConfiguratorPage {
                             <ul class="year-description-list">
                                 ${descriptionListItems}
                             </ul>
-                            ${yearObj.file_url?.url ? 
-                                `<a href="${yearObj.file_url.url}" target="_blank" class="text_link_secondary w-inline-block">
+                            ${yearObj.file_url?.url ?
+                        `<a href="${yearObj.file_url.url}" target="_blank" class="text_link_secondary w-inline-block">
                                     <div>下載年式規格資訊ⓘ</div>
                                 </a>` : ''}
                         </div>
                     </div>
                     <span class="hide w-form-label" for="year-${yearObj.year_code}">Year ${yearObj.year}</span>
                 `;
-    
+
                 yearContainer.appendChild(yearOption);
-    
+
                 const input = yearOption.querySelector("input");
                 if (input) {
                     input.addEventListener("change", () => {
@@ -1164,51 +1175,51 @@ class ConfiguratorPage {
                             this.updateSummary();
                         }
                     });
-    
+
                     if (index === 0) {
                         input.dispatchEvent(new Event("change"));
                     }
                 }
             });
-            
+
             // Show the year selection section if there are options
             const yearSelection = document.querySelector(".year-selection");
             if (yearSelection) {
                 yearSelection.style.display = yearObjs.length > 0 ? "block" : "none";
             }
-            
+
         } catch (error) {
             console.error("Error updating model year options:", error);
         }
     }
-    
+
     // You'll also need to update this method to work with the year_obj structure
     async updateColorOptionsForYear(year) {
         try {
             if (!this.currentConfig.engine || !this.currentConfig.trim || !year) {
                 throw new Error("Engine, trim, or year information is missing");
             }
-    
+
             // Find the specific configuration that matches the selected engine, trim, and year
-            const specificConfig = this.configurationData.find(config => 
+            const specificConfig = this.configurationData.find(config =>
                 config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
                 config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim)) &&
                 config.year_obj && config.year_obj.some(yearItem => yearItem.year === year)
             );
-    
+
             if (!specificConfig?.color_options) {
                 console.warn("No color options found for this configuration and year");
                 return;
             }
-    
+
             // Filter active colors for this specific year
             const activeColors = specificConfig.color_options
                 .filter(color => color.is_active)
                 .sort((a, b) => (a.price_adjustment || 0) - (b.price_adjustment || 0));
-    
+
             // Reset color selection
             this.currentConfig.color = null;
-            
+
             // Update color display with filtered colors
             this.resetColorDisplay();
             this.renderColorOptions(activeColors);
@@ -1217,30 +1228,30 @@ class ConfiguratorPage {
             console.error("Error updating color options for year:", error);
         }
     }
-    
+
     // Also need to update this method to use year_code when needed
     renderAccessoryOptions() {
         const accessories =
-        this.configurationData.find(
-            (config) =>
-                config._engines.some(
-                    (engine) => engine.id === parseInt(this.currentConfig.engine)
-                ) &&
-                config._trims.some(
-                    (trim) => trim.id === parseInt(this.currentConfig.trim)
-                ) &&
-                config.year_obj && config.year_obj.some(yearItem => yearItem.year === this.currentConfig.year)
-        )?.accessories_id?.[0] || [];
-    
+            this.configurationData.find(
+                (config) =>
+                    config._engines.some(
+                        (engine) => engine.id === parseInt(this.currentConfig.engine)
+                    ) &&
+                    config._trims.some(
+                        (trim) => trim.id === parseInt(this.currentConfig.trim)
+                    ) &&
+                    config.year_obj && config.year_obj.some(yearItem => yearItem.year === this.currentConfig.year)
+            )?.accessories_id?.[0] || [];
+
         const additionalContainer = document.querySelector(
             ".additional-selection .radio-group"
         );
         const additionalSelection = document.querySelector(".additional-selection");
         if (!additionalContainer || !additionalSelection) return;
-    
+
         // Clear existing options
         additionalContainer.innerHTML = "";
-    
+
         // Check if there are any accessories
         if (accessories.length === 0) {
             additionalSelection.style.display = "none";
@@ -1248,7 +1259,7 @@ class ConfiguratorPage {
         } else {
             additionalSelection.style.display = "block";
         }
-    
+
         // Render accessory options
         accessories.forEach((accessory) => {
             const accessoryOption = document.createElement("label");
@@ -1275,9 +1286,9 @@ class ConfiguratorPage {
                 <span class="hide w-form-label" for="additional-${accessory.id
                 }">Checkbox</span>
             `;
-    
+
             additionalContainer.appendChild(accessoryOption);
-    
+
             const input = accessoryOption.querySelector("input");
             input.addEventListener("change", () => {
                 this.updateSummary();
@@ -1371,7 +1382,7 @@ class ConfiguratorPage {
         const currentConfig = this.configurationData.find(config =>
             config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
             config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim)) &&
-            config.year_obj && config.year_obj.some(yearItem => yearItem.year === this.currentConfig.year) 
+            config.year_obj && config.year_obj.some(yearItem => yearItem.year === this.currentConfig.year)
         );
 
         const specs = currentConfig?._completespecs?.specifications || [];
@@ -1504,6 +1515,289 @@ class ConfiguratorPage {
             }
         }
     }
+
+    // Add new method to fetch stock data
+    async fetchStockData(dealerName) {
+        try {
+            if (!this.currentConfig.model || !dealerName) {
+                console.log("Missing model or dealer information for stock fetch");
+                this.hideStockSection();
+                return;
+            }
+
+            // Get brand code from model data
+            const brandCode = this.currentConfig.model.brand_code || '';
+            const modelCode = this.currentConfig.model.model_code || this.currentConfig.model.name || '';
+
+            console.log("Fetching stock data:", { brand: brandCode, model: modelCode, dealerName });
+
+            const response = await fetch(`${this.XANO_API_URL}/Stock_GetStock`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    brand: brandCode,
+                    model: modelCode,
+                    dealerName: dealerName
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch stock data: ${response.status}`);
+            }
+
+            const stockData = await response.json();
+            console.log("Stock data received:", stockData);
+
+            this.stockData = stockData;
+            this.updateStockDisplay(stockData);
+
+        } catch (error) {
+            console.error("Error fetching stock data:", error);
+            this.hideStockSection();
+        }
+    }
+
+    // Add method to update stock display
+    updateStockDisplay(stockData) {
+        const stockSection = document.querySelector('.stock_contain');
+        if (!stockSection) return;
+
+        // Hide section if no stock available
+        if (!stockData || stockData.length === 0) {
+            this.hideStockSection();
+            return;
+        }
+
+        // Show the section
+        stockSection.style.display = 'block';
+
+        // Get the product list container
+        const productList = stockSection.querySelector('.product_list');
+        if (!productList) return;
+
+        // Clear existing items (except the template if using Finsweet)
+        const existingItems = productList.querySelectorAll('.product_card:not(.w-dyn-item-template)');
+        existingItems.forEach(item => item.remove());
+
+        // Get template card
+        const templateCard = productList.querySelector('.product_card');
+        if (!templateCard) return;
+
+        // Create cards for each stock item
+        stockData.forEach(stockItem => {
+            const card = this.createStockCard(templateCard, stockItem);
+            if (card) {
+                productList.appendChild(card);
+            }
+        });
+
+        // If using Finsweet CMS Load, reinitialize it
+        if (window.fsAttributes && window.fsAttributes.cmsload) {
+            window.fsAttributes.cmsload.init();
+        }
+    }
+
+    // Add method to create individual stock card
+    createStockCard(template, stockItem) {
+        if (!stockItem.config) return null;
+
+        const card = template.cloneNode(true);
+        card.classList.remove('w-dyn-item-template');
+
+        // Update image
+        const imageEl = card.querySelector('[data-element="image"]');
+        if (imageEl && stockItem.config.color_options && stockItem.config.color_options.length > 0) {
+            // Find the matching color option
+            const colorOption = stockItem.config.color_options.find(
+                opt => opt.code === stockItem.color_code && opt.final_image && opt.final_image.length > 0
+            );
+            if (colorOption && colorOption.final_image[0]) {
+                imageEl.src = colorOption.final_image[0].url;
+                imageEl.srcset = colorOption.final_image[0].url;
+            }
+        }
+
+        // Update tag based on match level
+        const tagEl = card.querySelector('[data-element="tag"]');
+        if (tagEl) {
+            tagEl.textContent = this.calculateMatchLevel(stockItem);
+        }
+
+        // Update title (model name)
+        const titleEl = card.querySelector('[data-element="title"]');
+        if (titleEl) {
+            titleEl.textContent = this.currentConfig.model?.name || '';
+        }
+
+        // Update trim
+        const trimEl = card.querySelector('[data-element="trim"]');
+        if (trimEl && stockItem.config._trims) {
+            trimEl.textContent = stockItem.config._trims.name || '';
+        }
+
+        // Update engine
+        const engineEl = card.querySelector('[data-element="engine"]');
+        if (engineEl && stockItem.config._engines) {
+            engineEl.textContent = stockItem.config._engines.name || '';
+        }
+
+        // Update price
+        const priceEl = card.querySelector('[data-element="price"]');
+        if (priceEl) {
+            // Calculate total price
+            const modelsPrice = stockItem.config._models?.price || 0;
+            const trimPrice = stockItem.config.trim_price || 0;
+            const yearPrice = stockItem.config.year_obj?.[0]?.price || 0;
+            const colorPrice = stockItem.config.color_options?.find(c => c.code === stockItem.color_code)?.price_adjustment || 0;
+            const totalPrice = modelsPrice + trimPrice + yearPrice + colorPrice;
+
+            priceEl.textContent = totalPrice.toLocaleString();
+        }
+
+        // Update year
+        const yearEl = card.querySelector('[data-element="year"]');
+        if (yearEl && stockItem.config.year_obj && stockItem.config.year_obj.length > 0) {
+            yearEl.textContent = stockItem.config.year_obj[0].year;
+        }
+
+        // Update color
+        const colorEl = card.querySelector('[data-element="color"]');
+        if (colorEl) {
+            const colorOption = stockItem.config.color_options?.find(c => c.code === stockItem.color_code);
+            colorEl.textContent = colorOption?.color_name || '';
+        }
+
+        // Update accessories
+        const accessoriesEl = card.querySelector('[data-element="accessories"]');
+        if (accessoriesEl) {
+            if (stockItem.config.accessories_id && stockItem.config.accessories_id.length > 0) {
+                const accessoryNames = stockItem.config.accessories_id.map(acc => acc.name).join(', ');
+                accessoriesEl.textContent = accessoryNames;
+            } else {
+                accessoriesEl.textContent = '無';
+            }
+        }
+
+        // Update dealer
+        const dealerEl = card.querySelector('[data-element="dealer"]');
+        if (dealerEl) {
+            dealerEl.textContent = this.currentDealerName || '';
+        }
+
+        // Update link
+        const linkEl = card.querySelector('[data-element="link"]');
+        if (linkEl) {
+            // Create link to stock detail page or order page
+            const pathSegments = window.location.pathname.split('/');
+            const brandSlug = pathSegments[1];
+            linkEl.href = `/${brandSlug}/stock-detail?vin=${stockItem.vin}`;
+        }
+
+        return card;
+    }
+
+    // Add method to calculate match level
+    calculateMatchLevel(stockItem) {
+        // Model is already matched since we're fetching by model
+        // So we start with "相似車款" as baseline
+
+        if (!this.currentConfig.engine || !this.currentConfig.trim) {
+            return '相似車款';
+        }
+
+        const engineMatch = stockItem.config.engines_id === parseInt(this.currentConfig.engine);
+        const trimMatch = stockItem.config.trims_id === parseInt(this.currentConfig.trim);
+
+        // Check if engine and trim match for "相同車款"
+        if (engineMatch && trimMatch) {
+            // Now check for complete match
+            if (this.currentConfig.year && this.currentConfig.color) {
+                const yearMatch = stockItem.year_code === this.currentConfig.year_code;
+                const colorMatch = stockItem.color_code === this.getSelectedColorCode();
+
+                // Check accessories match
+                const selectedAccessories = this.getSelectedAccessories();
+                const stockAccessories = stockItem.config.accessories_id || [];
+
+                // Compare accessory IDs
+                const accessoryMatch = this.compareAccessories(selectedAccessories, stockAccessories);
+
+                if (yearMatch && colorMatch && accessoryMatch) {
+                    return '完全符合';
+                }
+            }
+
+            // Engine and trim match but not everything else
+            return '相同車款';
+        }
+
+        // Only model matches
+        return '相似車款';
+    }
+
+    // Add helper method to get selected color code
+    getSelectedColorCode() {
+        const selectedColorInput = document.querySelector('input[name="color"]:checked');
+        if (!selectedColorInput) return null;
+
+        // Find the color code from the current configuration
+        const currentConfig = this.configurationData.find(config =>
+            config._engines.some(engine => engine.id === parseInt(this.currentConfig.engine)) &&
+            config._trims.some(trim => trim.id === parseInt(this.currentConfig.trim))
+        );
+
+        if (!currentConfig || !currentConfig.color_options) return null;
+
+        const selectedColor = currentConfig.color_options.find(
+            color => color.color_name === this.currentConfig.color
+        );
+
+        return selectedColor?.code || null;
+    }
+
+    // Add helper method to get selected accessories
+    getSelectedAccessories() {
+        const selectedAccessoryInputs = document.querySelectorAll('input[name="additional"]:checked');
+        const accessoryIds = [];
+
+        selectedAccessoryInputs.forEach(input => {
+            // Extract accessory ID from the input ID (e.g., "additional-123" -> 123)
+            const match = input.id.match(/additional-(\d+)/);
+            if (match) {
+                accessoryIds.push(parseInt(match[1]));
+            }
+        });
+
+        return accessoryIds;
+    }
+
+    // Add helper method to compare accessories
+    compareAccessories(selectedIds, stockAccessories) {
+        // If no accessories selected and stock has no accessories, it's a match
+        if (selectedIds.length === 0 && stockAccessories.length === 0) {
+            return true;
+        }
+
+        // If counts don't match, it's not a match
+        if (selectedIds.length !== stockAccessories.length) {
+            return false;
+        }
+
+        // Check if all selected accessories are in stock accessories
+        const stockAccessoryIds = stockAccessories.map(acc => acc.id);
+        return selectedIds.every(id => stockAccessoryIds.includes(id));
+    }
+
+    // Add method to hide stock section
+    hideStockSection() {
+        const stockSection = document.querySelector('.stock_contain');
+        if (stockSection) {
+            stockSection.style.display = 'none';
+        }
+    }
+
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1585,11 +1879,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 localStorage.setItem("formData", JSON.stringify(data));
 
                 // ===== 修改這裡：使用新的重定向邏輯 =====
-                
+
                 // 從回應中提取所需的值
                 const p2 = result.result1.data.p2;
                 const token = result.order.response.result.data.token;
-                
+
                 // 構建重定向URL並導航
                 const redirectUrl = `https://stservice.startekmobility.com/OnlineOrder/?token=${token}&s=${p2}`;
                 window.location.href = redirectUrl;
