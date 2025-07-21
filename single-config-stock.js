@@ -1,6 +1,6 @@
 class ConfiguratorPage {
     constructor() {
-        this.XANO_API_URL = "https://x2xj-hiw3-yjhd.t7.xano.io/api:0K4rr2yl";
+        this.XANO_API_URL = "https://xano.startekmobility.com/api:0K4rr2yl";
         this.currentConfig = {
             model: null,
             engine: null,
