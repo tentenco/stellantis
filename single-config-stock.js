@@ -1700,14 +1700,15 @@ class ConfiguratorPage {
     // Helper method to calculate total price
     calculateStockTotalPrice(stockItem) {
         const modelsPrice = stockItem.config._models?.price || 0;
+        const enginePrice = stockItem.config._engine?.price_adjustment || 0;
         const trimPrice = stockItem.config.trim_price || 0;
         const yearPrice = stockItem.config.year_obj?.[0]?.price || 0;
         const colorOption = stockItem.config.color_options?.find(
             opt => opt.code === stockItem.color_code
         );
         const colorPrice = colorOption?.price_adjustment || 0;
-        
-        return modelsPrice + trimPrice + yearPrice + colorPrice;
+    
+        return modelsPrice + enginePrice + trimPrice + yearPrice + colorPrice;
     }
     
     // Helper method to get accessories text
