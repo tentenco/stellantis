@@ -1615,8 +1615,8 @@ class ConfiguratorPage {
             this.updateCardElement(card, 'image', colorOption?.final_image?.[0]?.url || 'https://cdn.prod.website-files.com/6735d5a11d254f870165369e/67615937b9e72eb31b06f316_placeholder.webp');
             this.updateCardElement(card, 'tag', this.calculateMatchLevel(stockItem));
             this.updateCardElement(card, 'title', this.currentConfig.model?.name || '');
-            this.updateCardElement(card, 'trim', stockItem.config._trims?.name || '');
-            this.updateCardElement(card, 'engine', stockItem.config._engines?.name || '');
+            this.updateCardElement(card, 'trim', stockItem.config._trim?.name || '');
+            this.updateCardElement(card, 'engine', stockItem.config._engine?.name || '');
             this.updateCardElement(card, 'price', this.calculateStockTotalPrice(stockItem).toLocaleString());
             this.updateCardElement(card, 'year', stockItem.config.year_obj?.[0]?.year || '');
             this.updateCardElement(card, 'color', colorOption?.color_name || '');
