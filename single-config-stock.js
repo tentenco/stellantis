@@ -1570,8 +1570,8 @@ class ConfiguratorPage {
         const listContainer = document.querySelector('#models-grid');
         if (!listContainer) return;
     
-        // Hide section if no stock available
-        if (!stockData || stockData.length === 0) {
+        // Check if stockData is actually an array
+        if (!stockData || !Array.isArray(stockData) || stockData.length === 0) {
             this.hideStockSection();
             // Clear only cloned items, not the template
             const clonedItems = listContainer.querySelectorAll('.w-dyn-item.cloned');
