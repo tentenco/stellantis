@@ -1563,149 +1563,70 @@ class ConfiguratorPage {
         }
     }
 
-    // Update the updateStockDisplay method
     updateStockDisplay(stockData) {
         const stockSection = document.querySelector('.stock_contain');
         if (!stockSection) return;
     
-        // Hide section if no stock available
         if (!stockData || stockData.length === 0) {
             this.hideStockSection();
             return;
         }
     
-        // Show the section
         stockSection.style.display = 'block';
     
-        // Initialize or reinitialize Finsweet CMS Load with external data
-        this.initializeFinsweet(stockData);
-    }
-    
-    // Add new method to properly integrate with Finsweet
-    initializeFinsweet(stockData) {
-        // Transform your stock data to match Finsweet's expected format
-        const transformedData = this.transformStockDataForFinsweet(stockData);
+        // Get the list container and template
+        const listContainer = document.querySelector('#models-grid');
+        const templateItem = listContainer.querySelector('.w-dyn-item');
         
-        // Wait for Finsweet to be ready
-        window.fsAttributes = window.fsAttributes || [];
-        window.fsAttributes.push([
-            'cmsload',
-            async (listInstances) => {
-                // Get the list instance
-                const [listInstance] = listInstances;
-                
-                if (!listInstance) {
-                    console.error('No Finsweet list instance found');
-                    return;
-                }
+        if (!listContainer || !templateItem) return;
     
-                // Clear existing items
-                listInstance.clearItems();
-                
-                // Add your items
-                const newItems = transformedData.map(item => ({
-                    ...item,
-                    _draft: false,
-                    _archived: false
-                }));
-                
-                // Load the new items
-                await listInstance.addItems(newItems);
-                
-                // Render the items
-                listInstance.renderItems();
-            }
-        ]);
-    }
+        // Clear existing items
+        listContainer.innerHTML = '';
     
-    // Transform stock data to match the template structure
-    transformStockDataForFinsweet(stockData) {
-        return stockData.map(stockItem => {
-            if (!stockItem.config) return null;
+        // Create cards for each stock item
+        stockData.forEach(stockItem => {
+            if (!stockItem.config) return;
     
-            // Calculate match level
-            const matchLevel = this.calculateMatchLevel(stockItem);
+            const card = templateItem.cloneNode(true);
             
             // Find color option
             const colorOption = stockItem.config.color_options?.find(
                 opt => opt.code === stockItem.color_code
             );
+    
+            // Update all elements
+            this.updateCardElement(card, 'image', colorOption?.final_image?.[0]?.url || '');
+            this.updateCardElement(card, 'tag', this.calculateMatchLevel(stockItem));
+            this.updateCardElement(card, 'title', this.currentConfig.model?.name || '');
+            this.updateCardElement(card, 'trim', stockItem.config._trims?.name || '');
+            this.updateCardElement(card, 'engine', stockItem.config._engines?.name || '');
+            this.updateCardElement(card, 'price', this.calculateStockTotalPrice(stockItem).toLocaleString());
+            this.updateCardElement(card, 'year', stockItem.config.year_obj?.[0]?.year || '');
+            this.updateCardElement(card, 'color', colorOption?.color_name || '');
+            this.updateCardElement(card, 'accessories', this.getStockAccessoriesText(stockItem));
+            this.updateCardElement(card, 'dealer', this.currentDealerName || '');
             
-            // Calculate total price
-            const modelsPrice = stockItem.config._models?.price || 0;
-            const trimPrice = stockItem.config.trim_price || 0;
-            const yearPrice = stockItem.config.year_obj?.[0]?.price || 0;
-            const colorPrice = colorOption?.price_adjustment || 0;
-            const totalPrice = modelsPrice + trimPrice + yearPrice + colorPrice;
-    
-            // Get accessories
-            const accessoryNames = stockItem.config.accessories_id?.length > 0
-                ? stockItem.config.accessories_id.map(acc => acc.name).join(', ')
-                : '無';
-    
-            // Create URL
+            // Update link
             const pathSegments = window.location.pathname.split('/');
             const brandSlug = pathSegments[1];
-            const linkUrl = `/${brandSlug}/stock-detail?vin=${stockItem.vin}`;
+            this.updateCardElement(card, 'link', `/${brandSlug}/stock-detail?vin=${stockItem.vin}`);
     
-            return {
-                // Map to your data attributes
-                'data-element-image': colorOption?.final_image?.[0]?.url || 'https://cdn.prod.website-files.com/6735d5a11d254f870165369e/67615937b9e72eb31b06f316_placeholder.webp',
-                'data-element-tag': matchLevel,
-                'data-element-title': this.currentConfig.model?.name || '',
-                'data-element-trim': stockItem.config._trims?.name || '',
-                'data-element-engine': stockItem.config._engines?.name || '',
-                'data-element-price': totalPrice.toLocaleString(),
-                'data-element-year': stockItem.config.year_obj?.[0]?.year || '',
-                'data-element-color': colorOption?.color_name || '',
-                'data-element-accessories': accessoryNames,
-                'data-element-dealer': this.currentDealerName || '',
-                'data-element-link': linkUrl
-            };
-        }).filter(item => item !== null);
+            listContainer.appendChild(card);
+        });
     }
     
-    // Alternative approach if the above doesn't work - use custom rendering
-    async updateStockDisplayAlternative(stockData) {
-        const stockSection = document.querySelector('.stock_contain');
-        if (!stockSection) return;
-    
-        if (!stockData || stockData.length === 0) {
-            this.hideStockSection();
-            return;
-        }
-    
-        stockSection.style.display = 'block';
-    
-        // Get the list container
-        const listContainer = document.querySelector('#models-grid');
-        if (!listContainer) return;
-    
-        // Get the template item
-        const templateItem = listContainer.querySelector('.w-dyn-item');
-        if (!templateItem) return;
-    
-        // Clear existing items (keep the template)
-        const existingItems = listContainer.querySelectorAll('.w-dyn-item:not(:first-child)');
-        existingItems.forEach(item => item.remove());
-    
-        // Create new items based on stock data
-        stockData.forEach((stockItem, index) => {
-            const newItem = this.createStockCardFromTemplate(templateItem, stockItem);
-            if (newItem && index === 0) {
-                // Replace the template with the first item
-                templateItem.replaceWith(newItem);
-            } else if (newItem) {
-                // Append subsequent items
-                listContainer.appendChild(newItem);
+    // Helper method to update card elements
+    updateCardElement(card, selector, value) {
+        const element = card.querySelector(`[data-element="${selector}"]`);
+        if (element) {
+            if (selector === 'image') {
+                element.src = value;
+                element.srcset = value;
+            } else if (selector === 'link') {
+                element.href = value;
+            } else {
+                element.textContent = value;
             }
-        });
-    
-        // Trigger Finsweet re-initialization if needed
-        if (window.fsAttributes && window.fsAttributes.cmsload) {
-            // Trigger a re-render of the CMS Load instance
-            const event = new CustomEvent('cmsload:renderitems');
-            window.dispatchEvent(event);
         }
     }
     
