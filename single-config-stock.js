@@ -912,6 +912,7 @@ class ConfiguratorPage {
         this.switchView("exterior");
 
         this.updateSummary();
+        this.updateStockMatchLevels();
     }
 
     async getTrimsForEngine(engineId) {
@@ -1078,6 +1079,7 @@ class ConfiguratorPage {
         this.renderAccessoryOptions();
         this.renderSpecifications();
         this.updateSummary();
+        this.updateStockMatchLevels();
     }
 
     async updateYearOptions() {
@@ -1293,6 +1295,7 @@ class ConfiguratorPage {
             input.addEventListener("change", () => {
                 this.updateSummary();
                 this.updatePriceDisplays();
+                this.updateStockMatchLevels();
             });
         });
     }
@@ -1364,7 +1367,7 @@ class ConfiguratorPage {
                     this.updatePriceDisplays();
                     this.updateColorDisplay(color);
                     this.updateSummary();
-
+                    this.updateStockMatchLevels();
                     this.scrollToCarousel();
                 }
             });
@@ -1916,6 +1919,57 @@ class ConfiguratorPage {
         if (stockSection) {
             stockSection.style.display = 'none';
         }
+    }
+
+    updateStockMatchLevels() {
+        if (!this.stockData || this.stockData.length === 0) return;
+        
+        const listContainer = document.querySelector('#models-grid');
+        if (!listContainer) return;
+        
+        // Get all cloned cards
+        const cards = Array.from(listContainer.querySelectorAll('.w-dyn-item.cloned'));
+        
+        // Create array of cards with their stock data and match level
+        const cardData = cards.map((card, index) => {
+            const stockItem = this.stockData[index];
+            if (!stockItem) return null;
+            
+            // Recalculate match level
+            const matchLevel = this.calculateMatchLevel(stockItem);
+            
+            // Update the tag in the card
+            const tagElement = card.querySelector('[data-element="tag"]');
+            if (tagElement) {
+                tagElement.textContent = matchLevel;
+            }
+            
+            return {
+                card: card,
+                matchLevel: matchLevel,
+                stockItem: stockItem
+            };
+        }).filter(item => item !== null);
+        
+        // Sort by match level
+        const matchLevelOrder = {
+            '完全符合': 1,
+            '相同車款': 2,
+            '相似車款': 3
+        };
+        
+        cardData.sort((a, b) => {
+            return matchLevelOrder[a.matchLevel] - matchLevelOrder[b.matchLevel];
+        });
+        
+        // Remove all cards and re-append in sorted order
+        cardData.forEach(item => {
+            item.card.remove();
+        });
+        
+        cardData.forEach(item => {
+            listContainer.appendChild(item.card);
+        });
     }
 
 }
