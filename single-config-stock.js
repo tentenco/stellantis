@@ -1564,73 +1564,88 @@ class ConfiguratorPage {
     }
 
     updateStockDisplay(stockData) {
-    const stockSection = document.querySelector('.stock_contain');
-    if (!stockSection) return;
-
-    const listContainer = document.querySelector('#models-grid');
-    if (!listContainer) return;
-
-    // Hide section if no stock available
-    if (!stockData || stockData.length === 0) {
-        this.hideStockSection();
-        // Clear only cloned items, not the template
+        const stockSection = document.querySelector('.stock_contain');
+        if (!stockSection) return;
+    
+        const listContainer = document.querySelector('#models-grid');
+        if (!listContainer) return;
+    
+        // Hide section if no stock available
+        if (!stockData || stockData.length === 0) {
+            this.hideStockSection();
+            // Clear only cloned items, not the template
+            const clonedItems = listContainer.querySelectorAll('.w-dyn-item.cloned');
+            clonedItems.forEach(item => item.remove());
+            return;
+        }
+    
+        // Show the section
+        stockSection.style.display = 'block';
+    
+        // Get or create template
+        let templateItem = listContainer.querySelector('.w-dyn-item:not(.cloned)');
+        
+        // If no template exists, we have a problem
+        if (!templateItem) {
+            console.error('No template item found');
+            return;
+        }
+    
+        // Hide the template
+        templateItem.style.display = 'none';
+    
+        // Clear only cloned items
         const clonedItems = listContainer.querySelectorAll('.w-dyn-item.cloned');
         clonedItems.forEach(item => item.remove());
-        return;
-    }
-
-    // Show the section
-    stockSection.style.display = 'block';
-
-    // Get or create template
-    let templateItem = listContainer.querySelector('.w-dyn-item:not(.cloned)');
     
-    // If no template exists, we have a problem
-    if (!templateItem) {
-        console.error('No template item found');
-        return;
+        // Create cards for each stock item
+        stockData.forEach(stockItem => {
+            if (!stockItem.config) return;
+    
+            const card = templateItem.cloneNode(true);
+            card.classList.add('cloned');
+            card.style.display = 'block';
+            
+            // Find color option
+            const colorOption = stockItem.config.color_options?.find(
+                opt => opt.code === stockItem.color_code
+            );
+    
+            // Update all elements
+            this.updateCardElement(card, 'image', colorOption?.final_image?.[0]?.url || 'https://cdn.prod.website-files.com/6735d5a11d254f870165369e/67615937b9e72eb31b06f316_placeholder.webp');
+            this.updateCardElement(card, 'tag', this.calculateMatchLevel(stockItem));
+            this.updateCardElement(card, 'title', this.currentConfig.model?.name || '');
+            this.updateCardElement(card, 'trim', stockItem.config._trims?.name || '');
+            this.updateCardElement(card, 'engine', stockItem.config._engines?.name || '');
+            this.updateCardElement(card, 'price', this.calculateStockTotalPrice(stockItem).toLocaleString());
+            this.updateCardElement(card, 'year', stockItem.config.year_obj?.[0]?.year || '');
+            this.updateCardElement(card, 'color', colorOption?.color_name || '');
+            this.updateCardElement(card, 'accessories', this.getStockAccessoriesText(stockItem));
+            this.updateCardElement(card, 'dealer', this.currentDealerName || '');
+            
+            // Update link
+            const pathSegments = window.location.pathname.split('/');
+            const brandSlug = pathSegments[1];
+            this.updateCardElement(card, 'link', `/${brandSlug}/stock-detail?vin=${stockItem.vin}`);
+    
+            listContainer.appendChild(card);
+        });
     }
 
-    // Hide the template
-    templateItem.style.display = 'none';
-
-    // Clear only cloned items
-    const clonedItems = listContainer.querySelectorAll('.w-dyn-item.cloned');
-    clonedItems.forEach(item => item.remove());
-
-    // Create cards for each stock item
-    stockData.forEach(stockItem => {
-        if (!stockItem.config) return;
-
-        const card = templateItem.cloneNode(true);
-        card.classList.add('cloned');
-        card.style.display = 'block';
-        
-        // Find color option
-        const colorOption = stockItem.config.color_options?.find(
-            opt => opt.code === stockItem.color_code
-        );
-
-        // Update all elements
-        this.updateCardElement(card, 'image', colorOption?.final_image?.[0]?.url || 'https://cdn.prod.website-files.com/6735d5a11d254f870165369e/67615937b9e72eb31b06f316_placeholder.webp');
-        this.updateCardElement(card, 'tag', this.calculateMatchLevel(stockItem));
-        this.updateCardElement(card, 'title', this.currentConfig.model?.name || '');
-        this.updateCardElement(card, 'trim', stockItem.config._trims?.name || '');
-        this.updateCardElement(card, 'engine', stockItem.config._engines?.name || '');
-        this.updateCardElement(card, 'price', this.calculateStockTotalPrice(stockItem).toLocaleString());
-        this.updateCardElement(card, 'year', stockItem.config.year_obj?.[0]?.year || '');
-        this.updateCardElement(card, 'color', colorOption?.color_name || '');
-        this.updateCardElement(card, 'accessories', this.getStockAccessoriesText(stockItem));
-        this.updateCardElement(card, 'dealer', this.currentDealerName || '');
-        
-        // Update link
-        const pathSegments = window.location.pathname.split('/');
-        const brandSlug = pathSegments[1];
-        this.updateCardElement(card, 'link', `/${brandSlug}/stock-detail?vin=${stockItem.vin}`);
-
-        listContainer.appendChild(card);
-    });
-}
+    // Helper method to update card elements
+    updateCardElement(card, selector, value) {
+        const element = card.querySelector(`[data-element="${selector}"]`);
+        if (element) {
+            if (selector === 'image') {
+                element.src = value;
+                element.srcset = value;
+            } else if (selector === 'link') {
+                element.href = value;
+            } else {
+                element.textContent = value;
+            }
+        }
+    }
     
     // Create card from template with proper data binding
     createStockCardFromTemplate(template, stockItem) {
