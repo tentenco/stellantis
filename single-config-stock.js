@@ -1608,7 +1608,10 @@ class ConfiguratorPage {
             const card = templateItem.cloneNode(true);
             card.classList.add('cloned');
             card.style.display = 'block';
-            
+
+            // Add VIN identifier to maintain card-data relationship
+            card.setAttribute('data-vin', stockItem.vin);
+
             // Find color option
             const colorOption = stockItem.config.color_options?.find(
                 opt => opt.code === stockItem.color_code
@@ -1931,8 +1934,11 @@ class ConfiguratorPage {
         const cards = Array.from(listContainer.querySelectorAll('.w-dyn-item.cloned'));
         
         // Create array of cards with their stock data and match level
-        const cardData = cards.map((card, index) => {
-            const stockItem = this.stockData[index];
+        const cardData = cards.map(card => {
+            // Find the corresponding stock item by VIN
+            const vin = card.getAttribute('data-vin');
+            const stockItem = this.stockData.find(item => item.vin === vin);
+            
             if (!stockItem) return null;
             
             // Recalculate match level
@@ -1962,10 +1968,8 @@ class ConfiguratorPage {
             return matchLevelOrder[a.matchLevel] - matchLevelOrder[b.matchLevel];
         });
         
-        // Remove all cards and re-append in sorted order
-        cardData.forEach(item => {
-            item.card.remove();
-        });
+        // Clear the container and re-append in sorted order
+        cards.forEach(card => card.remove());
         
         cardData.forEach(item => {
             listContainer.appendChild(item.card);
