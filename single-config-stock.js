@@ -1632,7 +1632,9 @@ class ConfiguratorPage {
             // Update link
             const pathSegments = window.location.pathname.split('/');
             const brandSlug = pathSegments[1];
-            this.updateCardElement(card, 'link', `/${brandSlug}/stock-detail?vin=${stockItem.vin}`);
+            const linkUrl = `/${brandSlug}/single-stock?vin=${stockItem.vin}&vehicle_code=${stockItem.vehicle_code}&year_code=${stockItem.year_code}&color_code=${stockItem.color_code}`;
+            
+            this.updateCardElement(card, 'link', linkUrl);
     
             listContainer.appendChild(card);
         });
