@@ -1559,6 +1559,7 @@ class ConfiguratorPage {
     
             this.stockData = stockData;
             this.updateStockDisplay(stockData);
+            this.updateStockMatchLevels();
     
         } catch (error) {
             console.error("Error fetching stock data:", error);
