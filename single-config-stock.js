@@ -1583,6 +1583,28 @@ class ConfiguratorPage {
             return;
         }
     
+        // Filter out duplicates based on vehicle_code, color_code, and year_code
+        const uniqueStockMap = new Map();
+        const filteredStockData = stockData.filter(stockItem => {
+            if (!stockItem.vehicle_code || !stockItem.color_code || !stockItem.year_code) {
+                return true; // Keep items without these properties
+            }
+            
+            const uniqueKey = `${stockItem.vehicle_code}-${stockItem.color_code}-${stockItem.year_code}`;
+            
+            if (!uniqueStockMap.has(uniqueKey)) {
+                uniqueStockMap.set(uniqueKey, true);
+                return true; // Keep first occurrence
+            }
+            
+            return false; // Skip duplicates
+        });
+    
+        console.log(`Filtered ${stockData.length} stock items to ${filteredStockData.length} unique items`);
+    
+        // Update the stored stock data to use filtered data
+        this.stockData = filteredStockData;
+    
         // Show the section
         stockSection.style.display = 'block';
     
@@ -1602,17 +1624,17 @@ class ConfiguratorPage {
         const clonedItems = listContainer.querySelectorAll('.w-dyn-item.cloned');
         clonedItems.forEach(item => item.remove());
     
-        // Create cards for each stock item
-        stockData.forEach(stockItem => {
+        // Create cards for each unique stock item
+        filteredStockData.forEach(stockItem => {
             if (!stockItem.config) return;
     
             const card = templateItem.cloneNode(true);
             card.classList.add('cloned');
             card.style.display = 'block';
-
+    
             // Add VIN identifier to maintain card-data relationship
             card.setAttribute('data-vin', stockItem.vin);
-
+    
             // Find color option
             const colorOption = stockItem.config.color_options?.find(
                 opt => opt.code === stockItem.color_code
