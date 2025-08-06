@@ -1571,6 +1571,8 @@ class ConfiguratorPage {
             this.stockData = stockData;
             this.updateStockDisplay(stockData);
             this.updateStockMatchLevels();
+            this.sortStockDataByMatchLevel();
+            this.refreshStockDisplay();
     
         } catch (error) {
             console.error("Error fetching stock data:", error);
@@ -1992,6 +1994,7 @@ class ConfiguratorPage {
         if (stockSection) {
             stockSection.style.display = 'none';
         }
+        
         // Also hide pagination when hiding stock section
         const pagination = document.querySelector('.stock_contain .pagination');
         if (pagination) {
@@ -2002,53 +2005,11 @@ class ConfiguratorPage {
     updateStockMatchLevels() {
         if (!this.stockData || this.stockData.length === 0) return;
         
-        const listContainer = document.querySelector('#models-grid');
-        if (!listContainer) return;
+        // Sort the entire stock data array
+        this.sortStockDataByMatchLevel();
         
-        // Get all cloned cards
-        const cards = Array.from(listContainer.querySelectorAll('.w-dyn-item.cloned'));
-        
-        // Create array of cards with their stock data and match level
-        const cardData = cards.map(card => {
-            // Find the corresponding stock item by VIN
-            const vin = card.getAttribute('data-vin');
-            const stockItem = this.stockData.find(item => item.vin === vin);
-            
-            if (!stockItem) return null;
-            
-            // Recalculate match level
-            const matchLevel = this.calculateMatchLevel(stockItem);
-            
-            // Update the tag in the card
-            const tagElement = card.querySelector('[data-element="tag"]');
-            if (tagElement) {
-                tagElement.textContent = matchLevel;
-            }
-            
-            return {
-                card: card,
-                matchLevel: matchLevel,
-                stockItem: stockItem
-            };
-        }).filter(item => item !== null);
-        
-        // Sort by match level
-        const matchLevelOrder = {
-            '完全符合': 1,
-            '相同車款': 2,
-            '相似車款': 3
-        };
-        
-        cardData.sort((a, b) => {
-            return matchLevelOrder[a.matchLevel] - matchLevelOrder[b.matchLevel];
-        });
-        
-        // Clear the container and re-append in sorted order
-        cards.forEach(card => card.remove());
-        
-        cardData.forEach(item => {
-            listContainer.appendChild(item.card);
-        });
+        // Refresh the display with sorted data
+        this.refreshStockDisplay();
     }
 
     updateLoadMoreButton() {
@@ -2057,10 +2018,54 @@ class ConfiguratorPage {
     
         // Show or hide based on whether there are more items to load
         if (this.currentStockDisplayed < this.stockData.length) {
-            pagination.style.display = 'block';
+            pagination.style.display = 'flex';
         } else {
             pagination.style.display = 'none';
         }
+    }
+
+    sortStockDataByMatchLevel() {
+        if (!this.stockData || this.stockData.length === 0) return;
+        
+        // Calculate match level for each item and sort
+        const matchLevelOrder = {
+            '完全符合': 1,
+            '相同車款': 2,
+            '相似車款': 3
+        };
+        
+        this.stockData.sort((a, b) => {
+            const matchLevelA = this.calculateMatchLevel(a);
+            const matchLevelB = this.calculateMatchLevel(b);
+            
+            return matchLevelOrder[matchLevelA] - matchLevelOrder[matchLevelB];
+        });
+    }
+
+    refreshStockDisplay() {
+        const listContainer = document.querySelector('#models-grid');
+        const templateItem = listContainer?.querySelector('.w-dyn-item:not(.cloned)');
+        
+        if (!listContainer || !templateItem || !this.stockData) return;
+        
+        // Clear existing cloned items
+        const clonedItems = listContainer.querySelectorAll('.w-dyn-item.cloned');
+        clonedItems.forEach(item => item.remove());
+        
+        // Reset counter
+        this.currentStockDisplayed = 0;
+        
+        // Re-display items up to the limit
+        const itemsToShow = Math.min(this.stockDisplayLimit, this.stockData.length);
+        
+        for (let i = 0; i < itemsToShow; i++) {
+            this.createAndAppendStockCard(this.stockData[i], templateItem, listContainer);
+        }
+        
+        this.currentStockDisplayed = itemsToShow;
+        
+        // Update load more button visibility
+        this.updateLoadMoreButton();
     }
 
 }
