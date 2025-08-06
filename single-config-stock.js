@@ -1535,17 +1535,14 @@ class ConfiguratorPage {
         try {
             if (!this.currentConfig.model || !dealerName) {
                 console.log("Missing model or dealer information for stock fetch");
-                this.stockData = []; // Set to empty array
+                this.stockData = [];
                 this.hideStockSection();
                 return;
             }
     
-            // Get brand from URL path and convert to uppercase
             const pathSegments = window.location.pathname.split('/');
             const brandSlug = pathSegments[1];
             const brandCode = brandSlug ? brandSlug.toUpperCase() : '';
-            
-            // Get model code from model data
             const modelCode = this.currentConfig.model.models_code || '';
     
             console.log("Fetching stock data:", { brand: brandCode, model: modelCode, dealerName });
@@ -1571,7 +1568,15 @@ class ConfiguratorPage {
             
             // Ensure stockData is an array
             if (!Array.isArray(stockData)) {
-                console.error("Stock data is not an array:", stockData);
+                console.warn("Stock data is not an array, treating as empty:", stockData);
+                this.stockData = [];
+                this.hideStockSection();
+                return;
+            }
+            
+            // Check if array is empty
+            if (stockData.length === 0) {
+                console.log("No stock data available for this dealer");
                 this.stockData = [];
                 this.hideStockSection();
                 return;
@@ -1586,7 +1591,7 @@ class ConfiguratorPage {
     
         } catch (error) {
             console.error("Error fetching stock data:", error);
-            this.stockData = []; // Set to empty array on error
+            this.stockData = [];
             this.hideStockSection();
         }
     }
@@ -1696,9 +1701,12 @@ class ConfiguratorPage {
 
     loadMoreStock() {
         const listContainer = document.querySelector('#models-grid');
-        const templateItem = listContainer.querySelector('.w-dyn-item:not(.cloned)');
+        const templateItem = listContainer?.querySelector('.w-dyn-item:not(.cloned)');
         
         if (!listContainer || !templateItem) return;
+        
+        // Check if stockData is valid
+        if (!this.stockData || !Array.isArray(this.stockData)) return;
     
         // Calculate how many more to show
         const remainingItems = this.stockData.length - this.currentStockDisplayed;
@@ -1716,9 +1724,51 @@ class ConfiguratorPage {
         
         // Update button visibility
         this.updateLoadMoreButton();
+    }
+
+    sortVisibleCards() {
+        const listContainer = document.querySelector('#models-grid');
+        if (!listContainer) return;
         
-        // Re-sort after adding new items
-        this.updateStockMatchLevels();
+        // Get all cloned cards
+        const cards = Array.from(listContainer.querySelectorAll('.w-dyn-item.cloned'));
+        
+        // Create array of cards with their match level
+        const cardData = cards.map(card => {
+            const vin = card.getAttribute('data-vin');
+            const stockItem = this.stockData.find(item => item.vin === vin);
+            
+            if (!stockItem) return null;
+            
+            const matchLevel = this.calculateMatchLevel(stockItem);
+            
+            // Update the tag
+            const tagElement = card.querySelector('[data-element="tag"]');
+            if (tagElement) {
+                tagElement.textContent = matchLevel;
+            }
+            
+            return {
+                card: card,
+                matchLevel: matchLevel
+            };
+        }).filter(item => item !== null);
+        
+        // Sort by match level
+        const matchLevelOrder = {
+            '完全符合': 1,
+            '相同車款': 2,
+            '相似車款': 3
+        };
+        
+        cardData.sort((a, b) => {
+            return matchLevelOrder[a.matchLevel] - matchLevelOrder[b.matchLevel];
+        });
+        
+        // Re-append in sorted order
+        cardData.forEach(item => {
+            listContainer.appendChild(item.card);
+        });
     }
 
     // Helper method to update card elements
@@ -2022,8 +2072,14 @@ class ConfiguratorPage {
         // Sort the entire stock data array
         this.sortStockDataByMatchLevel();
         
-        // Refresh the display with sorted data
-        this.refreshStockDisplay();
+        // If we already have items displayed, just sort the visible cards
+        // Otherwise, refresh the display
+        const displayedCards = document.querySelectorAll('.w-dyn-item.cloned');
+        if (displayedCards.length > 0) {
+            this.sortVisibleCards();
+        } else {
+            this.refreshStockDisplay();
+        }
     }
 
     updateLoadMoreButton() {
