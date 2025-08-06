@@ -1535,14 +1535,15 @@ class ConfiguratorPage {
         try {
             if (!this.currentConfig.model || !dealerName) {
                 console.log("Missing model or dealer information for stock fetch");
+                this.stockData = []; // Set to empty array
                 this.hideStockSection();
                 return;
             }
     
             // Get brand from URL path and convert to uppercase
             const pathSegments = window.location.pathname.split('/');
-            const brandSlug = pathSegments[1]; // e.g., "peugeot"
-            const brandCode = brandSlug ? brandSlug.toUpperCase() : ''; // Convert to "PEUGEOT"
+            const brandSlug = pathSegments[1];
+            const brandCode = brandSlug ? brandSlug.toUpperCase() : '';
             
             // Get model code from model data
             const modelCode = this.currentConfig.model.models_code || '';
@@ -1567,15 +1568,25 @@ class ConfiguratorPage {
     
             const stockData = await response.json();
             console.log("Stock data received:", stockData);
+            
+            // Ensure stockData is an array
+            if (!Array.isArray(stockData)) {
+                console.error("Stock data is not an array:", stockData);
+                this.stockData = [];
+                this.hideStockSection();
+                return;
+            }
     
             this.stockData = stockData;
             this.updateStockDisplay(stockData);
-            this.updateStockMatchLevels();
+            
+            // Sort by match level after initial display
             this.sortStockDataByMatchLevel();
             this.refreshStockDisplay();
     
         } catch (error) {
             console.error("Error fetching stock data:", error);
+            this.stockData = []; // Set to empty array on error
             this.hideStockSection();
         }
     }
@@ -2003,7 +2014,10 @@ class ConfiguratorPage {
     }
 
     updateStockMatchLevels() {
-        if (!this.stockData || this.stockData.length === 0) return;
+        // Add array check
+        if (!this.stockData || !Array.isArray(this.stockData) || this.stockData.length === 0) {
+            return;
+        }
         
         // Sort the entire stock data array
         this.sortStockDataByMatchLevel();
@@ -2025,7 +2039,10 @@ class ConfiguratorPage {
     }
 
     sortStockDataByMatchLevel() {
-        if (!this.stockData || this.stockData.length === 0) return;
+        // Ensure stockData is an array and has items
+        if (!this.stockData || !Array.isArray(this.stockData) || this.stockData.length === 0) {
+            return;
+        }
         
         // Calculate match level for each item and sort
         const matchLevelOrder = {
@@ -2046,7 +2063,13 @@ class ConfiguratorPage {
         const listContainer = document.querySelector('#models-grid');
         const templateItem = listContainer?.querySelector('.w-dyn-item:not(.cloned)');
         
-        if (!listContainer || !templateItem || !this.stockData) return;
+        if (!listContainer || !templateItem) return;
+        
+        // Check if stockData exists and is an array
+        if (!this.stockData || !Array.isArray(this.stockData) || this.stockData.length === 0) {
+            this.hideStockSection();
+            return;
+        }
         
         // Clear existing cloned items
         const clonedItems = listContainer.querySelectorAll('.w-dyn-item.cloned');
