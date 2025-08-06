@@ -21,6 +21,8 @@ class ConfiguratorPage {
         };
         this.stockData = [];
         this.currentDealerName = null;
+        this.stockDisplayLimit = 1; // Change to 3 for production
+        this.currentStockDisplayed = 0;
 
         this.init();
         this.initializeSliders();
@@ -91,6 +93,15 @@ class ConfiguratorPage {
             });
         }
 
+        // Add load more button listener
+        const loadMoreBtn = document.querySelector('.stock_contain .pagination .btn_main_wrap');
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.loadMoreStock();
+            });
+        }
+
         this.initializePaymentToggle();
     }
 
@@ -140,6 +151,11 @@ class ConfiguratorPage {
             setTimeout(() => {
                 loadingScreen.style.display = 'none';
             }, 500);
+        }
+        // Hide pagination button initially
+        const pagination = document.querySelector('.stock_contain .pagination');
+        if (pagination) {
+            pagination.style.display = 'none';
         }
     }
 
@@ -801,7 +817,7 @@ class ConfiguratorPage {
         if (this.currentConfig.year_file_url) {
             const specLinkRow = document.createElement("div");
             specLinkRow.className = "summary_row";
-        
+
             specLinkRow.innerHTML = `
                 <a href="${this.currentConfig.year_file_url}" 
                     target="_blank" 
@@ -1572,90 +1588,124 @@ class ConfiguratorPage {
         // Check if stockData is actually an array
         if (!stockData || !Array.isArray(stockData) || stockData.length === 0) {
             this.hideStockSection();
-            // Clear only cloned items, not the template
             const clonedItems = listContainer.querySelectorAll('.w-dyn-item.cloned');
             clonedItems.forEach(item => item.remove());
             return;
         }
     
-        // Filter out duplicates based on vehicle_code, color_code, and year_code
+        // Filter out duplicates
         const uniqueStockMap = new Map();
         const filteredStockData = stockData.filter(stockItem => {
             if (!stockItem.vehicle_code || !stockItem.color_code || !stockItem.year_code) {
-                return true; // Keep items without these properties
+                return true;
             }
             
             const uniqueKey = `${stockItem.vehicle_code}-${stockItem.color_code}-${stockItem.year_code}`;
             
             if (!uniqueStockMap.has(uniqueKey)) {
                 uniqueStockMap.set(uniqueKey, true);
-                return true; // Keep first occurrence
+                return true;
             }
             
-            return false; // Skip duplicates
+            return false;
         });
     
         console.log(`Filtered ${stockData.length} stock items to ${filteredStockData.length} unique items`);
     
-        // Update the stored stock data to use filtered data
         this.stockData = filteredStockData;
-    
-        // Show the section
         stockSection.style.display = 'block';
     
-        // Get or create template
         let templateItem = listContainer.querySelector('.w-dyn-item:not(.cloned)');
         
-        // If no template exists, we have a problem
         if (!templateItem) {
             console.error('No template item found');
             return;
         }
     
-        // Hide the template
         templateItem.style.display = 'none';
     
         // Clear only cloned items
         const clonedItems = listContainer.querySelectorAll('.w-dyn-item.cloned');
         clonedItems.forEach(item => item.remove());
     
-        // Create cards for each unique stock item
-        filteredStockData.forEach(stockItem => {
-            if (!stockItem.config) return;
+        // Reset counter
+        this.currentStockDisplayed = 0;
     
-            const card = templateItem.cloneNode(true);
-            card.classList.add('cloned');
-            card.style.display = 'block';
+        // Create cards only up to the limit
+        const itemsToShow = Math.min(this.stockDisplayLimit, filteredStockData.length);
+        
+        for (let i = 0; i < itemsToShow; i++) {
+            this.createAndAppendStockCard(filteredStockData[i], templateItem, listContainer);
+        }
     
-            // Add VIN identifier to maintain card-data relationship
-            card.setAttribute('data-vin', stockItem.vin);
+        this.currentStockDisplayed = itemsToShow;
     
-            // Find color option
-            const colorOption = stockItem.config.color_options?.find(
-                opt => opt.code === stockItem.color_code
-            );
+        // Add or update load more button
+        this.updateLoadMoreButton();
+    }
+
+    createAndAppendStockCard(stockItem, templateItem, listContainer) {
+        if (!stockItem.config) return;
     
-            // Update all elements
-            this.updateCardElement(card, 'image', colorOption?.final_image?.[0]?.url || 'https://cdn.prod.website-files.com/6735d5a11d254f870165369e/67615937b9e72eb31b06f316_placeholder.webp');
-            this.updateCardElement(card, 'tag', this.calculateMatchLevel(stockItem));
-            this.updateCardElement(card, 'title', this.currentConfig.model?.name || '');
-            this.updateCardElement(card, 'trim', stockItem.config._trim?.name || '');
-            this.updateCardElement(card, 'engine', stockItem.config._engine?.name || '');
-            this.updateCardElement(card, 'price', this.calculateStockTotalPrice(stockItem).toLocaleString());
-            this.updateCardElement(card, 'year', stockItem.config.year_obj?.[0]?.year || '');
-            this.updateCardElement(card, 'color', colorOption?.color_name || '');
-            this.updateCardElement(card, 'accessories', this.getStockAccessoriesText(stockItem));
-            this.updateCardElement(card, 'dealer', this.currentDealerName || '');
-            
-            // Update link
-            const pathSegments = window.location.pathname.split('/');
-            const brandSlug = pathSegments[1];
-            const linkUrl = `/${brandSlug}/single-stock?vin=${stockItem.vin}&vehicle_code=${stockItem.vehicle_code}&year_code=${stockItem.year_code}&color_code=${stockItem.color_code}&dealer=${encodeURIComponent(this.currentDealerName || '')}`;
-            
-            this.updateCardElement(card, 'link', linkUrl);
+        const card = templateItem.cloneNode(true);
+        card.classList.add('cloned');
+        card.style.display = 'block';
     
-            listContainer.appendChild(card);
-        });
+        // Add VIN identifier
+        card.setAttribute('data-vin', stockItem.vin);
+    
+        // Find color option
+        const colorOption = stockItem.config.color_options?.find(
+            opt => opt.code === stockItem.color_code
+        );
+    
+        // Update all elements
+        this.updateCardElement(card, 'image', colorOption?.final_image?.[0]?.url || 'https://cdn.prod.website-files.com/6735d5a11d254f870165369e/67615937b9e72eb31b06f316_placeholder.webp');
+        this.updateCardElement(card, 'tag', this.calculateMatchLevel(stockItem));
+        this.updateCardElement(card, 'title', this.currentConfig.model?.name || '');
+        this.updateCardElement(card, 'trim', stockItem.config._trim?.name || '');
+        this.updateCardElement(card, 'engine', stockItem.config._engine?.name || '');
+        this.updateCardElement(card, 'price', this.calculateStockTotalPrice(stockItem).toLocaleString());
+        this.updateCardElement(card, 'year', stockItem.config.year_obj?.[0]?.year || '');
+        this.updateCardElement(card, 'color', colorOption?.color_name || '');
+        this.updateCardElement(card, 'accessories', this.getStockAccessoriesText(stockItem));
+        this.updateCardElement(card, 'dealer', this.currentDealerName || '');
+        
+        // Update link
+        const pathSegments = window.location.pathname.split('/');
+        const brandSlug = pathSegments[1];
+        const linkUrl = `/${brandSlug}/single-stock?vin=${stockItem.vin}&vehicle_code=${stockItem.vehicle_code}&year_code=${stockItem.year_code}&color_code=${stockItem.color_code}&dealer=${encodeURIComponent(this.currentDealerName || '')}`;
+        
+        this.updateCardElement(card, 'link', linkUrl);
+    
+        listContainer.appendChild(card);
+    }
+
+    loadMoreStock() {
+        const listContainer = document.querySelector('#models-grid');
+        const templateItem = listContainer.querySelector('.w-dyn-item:not(.cloned)');
+        
+        if (!listContainer || !templateItem) return;
+    
+        // Calculate how many more to show
+        const remainingItems = this.stockData.length - this.currentStockDisplayed;
+        const itemsToShow = Math.min(this.stockDisplayLimit, remainingItems);
+        
+        // Add the next batch of items
+        for (let i = 0; i < itemsToShow; i++) {
+            const index = this.currentStockDisplayed + i;
+            if (index < this.stockData.length) {
+                this.createAndAppendStockCard(this.stockData[index], templateItem, listContainer);
+            }
+        }
+        
+        this.currentStockDisplayed += itemsToShow;
+        
+        // Update button visibility
+        this.updateLoadMoreButton();
+        
+        // Re-sort after adding new items
+        this.updateStockMatchLevels();
     }
 
     // Helper method to update card elements
@@ -1942,6 +1992,11 @@ class ConfiguratorPage {
         if (stockSection) {
             stockSection.style.display = 'none';
         }
+        // Also hide pagination when hiding stock section
+        const pagination = document.querySelector('.stock_contain .pagination');
+        if (pagination) {
+            pagination.style.display = 'none';
+        }
     }
 
     updateStockMatchLevels() {
@@ -1994,6 +2049,18 @@ class ConfiguratorPage {
         cardData.forEach(item => {
             listContainer.appendChild(item.card);
         });
+    }
+
+    updateLoadMoreButton() {
+        const pagination = document.querySelector('.stock_contain .pagination');
+        if (!pagination) return;
+    
+        // Show or hide based on whether there are more items to load
+        if (this.currentStockDisplayed < this.stockData.length) {
+            pagination.style.display = 'block';
+        } else {
+            pagination.style.display = 'none';
+        }
     }
 
 }
