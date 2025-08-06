@@ -797,25 +797,20 @@ class ConfiguratorPage {
             existingSpecLink.remove();
         }
 
-        // Construct the spec link if currentConfig and brandSlug are available
-        if (currentConfig && brandSlug) {
+        // Add spec link if year file URL is available
+        if (this.currentConfig.year_file_url) {
             const specLinkRow = document.createElement("div");
             specLinkRow.className = "summary_row";
-            // Create the dynamic URL
-            const specLinkURL = `/${brandSlug}/spec?id=${currentConfig.id}`;
-
+        
             specLinkRow.innerHTML = `
-                <a href="${specLinkURL}" 
+                <a href="${this.currentConfig.year_file_url}" 
                     target="_blank" 
                     class="text_link_secondary w-inline-block"
                     id="summary-spec-link">
-                    <div>檢視詳細規格表ⓘ</div>
+                    <div>下載年式規格資訊ⓘ</div>
                 </a>
             `;
             summaryGroup.appendChild(specLinkRow);
-
-            // Store the specLinkURL in currentConfig
-            this.currentConfig.specLinkURL = specLinkURL;
         }
     }
     async updateEngineOptions() {
