@@ -22,7 +22,7 @@ class ConfiguratorPage {
         this.stockData = [];
         this.originalStockData = [];
         this.currentDealerName = null;
-        this.stockDisplayLimit = 1; // Change to 3 for production
+        this.stockDisplayLimit = 3; // Change to 3 for production
         this.currentStockDisplayed = 0;
 
         this.init();
