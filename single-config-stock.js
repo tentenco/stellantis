@@ -20,6 +20,7 @@ class ConfiguratorPage {
             interior: null,
         };
         this.stockData = [];
+        this.originalStockData = [];
         this.currentDealerName = null;
         this.stockDisplayLimit = 1; // Change to 3 for production
         this.currentStockDisplayed = 0;
@@ -1186,6 +1187,7 @@ class ConfiguratorPage {
                             this.updateColorOptionsForYear(yearObj.year);
                             this.updatePriceDisplays(); // Update price when year changes
                             this.updateSummary();
+                            this.updateStockMatchLevels();
                         }
                     });
 
@@ -1569,6 +1571,7 @@ class ConfiguratorPage {
             // Ensure stockData is an array
             if (!Array.isArray(stockData)) {
                 console.warn("Stock data is not an array, treating as empty:", stockData);
+                this.originalStockData = []; // Clear original
                 this.stockData = [];
                 this.hideStockSection();
                 return;
@@ -1577,20 +1580,24 @@ class ConfiguratorPage {
             // Check if array is empty
             if (stockData.length === 0) {
                 console.log("No stock data available for this dealer");
+                this.originalStockData = []; // Clear original
                 this.stockData = [];
                 this.hideStockSection();
                 return;
             }
-    
+
+            // Store the original data
+            this.originalStockData = [...stockData]; // Keep a clean copy
             this.stockData = stockData;
             this.updateStockDisplay(stockData);
             
             // Sort by match level after initial display
             this.sortStockDataByMatchLevel();
             this.refreshStockDisplay();
-    
+
         } catch (error) {
             console.error("Error fetching stock data:", error);
+            this.originalStockData = []; // Clear original
             this.stockData = [];
             this.hideStockSection();
         }
@@ -2069,17 +2076,14 @@ class ConfiguratorPage {
             return;
         }
         
+        // Re-filter duplicates first (in case data changed)
+        this.filterDuplicateStock();
+        
         // Sort the entire stock data array
         this.sortStockDataByMatchLevel();
         
-        // If we already have items displayed, just sort the visible cards
-        // Otherwise, refresh the display
-        const displayedCards = document.querySelectorAll('.w-dyn-item.cloned');
-        if (displayedCards.length > 0) {
-            this.sortVisibleCards();
-        } else {
-            this.refreshStockDisplay();
-        }
+        // Always refresh the display when configuration changes
+        this.refreshStockDisplay();
     }
 
     updateLoadMoreButton() {
@@ -2145,6 +2149,29 @@ class ConfiguratorPage {
         
         // Update load more button visibility
         this.updateLoadMoreButton();
+    }
+
+    filterDuplicateStock() {
+        if (!this.originalStockData || !Array.isArray(this.originalStockData)) return;
+        
+        const uniqueStockMap = new Map();
+        const filteredData = this.originalStockData.filter(stockItem => {
+            if (!stockItem.vehicle_code || !stockItem.color_code || !stockItem.year_code) {
+                return true;
+            }
+            
+            const uniqueKey = `${stockItem.vehicle_code}-${stockItem.color_code}-${stockItem.year_code}`;
+            
+            if (!uniqueStockMap.has(uniqueKey)) {
+                uniqueStockMap.set(uniqueKey, true);
+                return true;
+            }
+            
+            return false;
+        });
+        
+        console.log(`Re-filtered ${this.originalStockData.length} items to ${filteredData.length} unique items`);
+        this.stockData = [...filteredData]; // Create a new array
     }
 
 }
